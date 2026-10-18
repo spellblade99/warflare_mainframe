@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="app-version" content="0.2.0">
+<meta name="theme-color" content="#0d0a11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Launcher">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Warflare Launcher</title>
+<style>
+:root{--bg:#0d0a11;--p1:#1a141f;--p2:#251c2d;--ink:#030205;--tx:#e6dce4;--mut:#8b7f93;--red:#b3344f;--red2:#932a41;--teal:#3e8f93;--amb:#c79a45;--ok:#5a9a6e}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.4 "Bahnschrift","Rajdhani","Arial Narrow",system-ui,sans-serif;min-height:100vh;
+background-image:repeating-linear-gradient(135deg,rgba(179,52,79,.05) 0 2px,transparent 2px 14px),linear-gradient(180deg,#120d17 0,#0d0a11 40%)}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:18px 22px;background:var(--p1);border-bottom:4px solid var(--ink);box-shadow:0 5px 0 var(--red2)}
+h1{margin:0;font-size:26px;letter-spacing:.18em;text-transform:uppercase;font-weight:800}
+h1 b{color:var(--red)}
+.sub{font-size:12px;letter-spacing:.2em;color:var(--teal);text-transform:uppercase}
+.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;padding:3px 9px;border:2px solid var(--ink);background:var(--p2);font-size:12px;letter-spacing:.12em;text-transform:uppercase;box-shadow:3px 3px 0 var(--ink)}
+.chip.t{color:var(--teal)}.chip.a{color:var(--amb)}.chip.r{color:var(--red)}.chip.g{color:var(--ok)}
+button{font:inherit;cursor:pointer;color:var(--tx);text-transform:uppercase;letter-spacing:.14em;font-weight:700;padding:9px 16px;border:3px solid var(--ink);background:linear-gradient(var(--p2),#1d1624);box-shadow:4px 4px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+button:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--ink);border-color:var(--teal)}
+button:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+button.pri{background:linear-gradient(#bd3a56,var(--red2));color:#fff}
+button.pri:hover{border-color:var(--amb)}
+button.danger{color:var(--red)}
+main{padding:24px 22px 60px;max-width:1200px;margin:0 auto}
+.bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:26px}
+.card{position:relative;background:linear-gradient(160deg,var(--p2),var(--p1) 70%);border:3px solid var(--ink);outline:1px solid rgba(179,52,79,.4);box-shadow:8px 8px 0 var(--ink);padding:16px 16px 18px}
+.card:before{content:"";position:absolute;left:0;top:0;width:100%;height:5px;background:var(--red)}
+.card:after{content:"";position:absolute;right:0;bottom:0;width:0;height:0;border-style:solid;border-width:0 0 22px 22px;border-color:transparent transparent var(--ink) transparent}
+.id{font-size:11px;letter-spacing:.25em;color:var(--teal)}
+.card h2{margin:4px 0 2px;font-size:21px;letter-spacing:.06em;text-transform:uppercase;word-break:break-word}
+.file{color:var(--mut);font-size:12px;margin-bottom:10px;word-break:break-all}
+.row{display:flex;gap:10px;align-items:stretch;margin-top:14px}
+.row .pri{flex:1;padding:12px}
+.cog{width:50px;padding:0;font-size:22px;color:var(--teal)}
+.empty{border:3px dashed var(--red2);padding:40px;text-align:center;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
+dialog{background:var(--p1);color:var(--tx);border:4px solid var(--ink);outline:1px solid var(--red2);box-shadow:10px 10px 0 var(--ink);padding:0;width:min(520px,94vw);max-height:92vh}
+dialog::backdrop{background:rgba(3,2,5,.78)}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--p2);border-bottom:3px solid var(--ink);box-shadow:0 3px 0 var(--red2)}
+.dh h3{margin:0;letter-spacing:.16em;text-transform:uppercase;font-size:16px}
+.db{padding:16px;display:grid;gap:12px;overflow:auto;max-height:70vh}
+label{display:grid;gap:4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal)}
+input[type=text],input[type=password]{font:inherit;color:var(--tx);background:#0f0b13;border:3px solid var(--ink);outline:1px solid rgba(62,143,147,.5);padding:9px 10px;width:100%}
+input:focus{outline:2px solid var(--amb)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ck{display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;color:var(--mut);font-size:13px}
+.note{font-size:12px;color:var(--mut);border-left:4px solid var(--amb);padding-left:10px}
+.hist{font-size:12px;color:var(--mut);display:grid;gap:4px;border-top:2px solid var(--ink);padding-top:8px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99;background:var(--p2);border:3px solid var(--ink);border-left:8px solid var(--teal);box-shadow:5px 5px 0 var(--ink);padding:10px 16px;display:none;max-width:92vw}
+#toast.err{border-left-color:var(--red)}
+@media(max-width:560px){h1{font-size:20px}.two,.acts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Warflare <b>//</b> Launcher</h1><div class="sub">Neural network app hub</div></div>
+  <div class="meta">
+    <span class="chip a" id="date"></span>
+    <span class="chip t" id="ver"></span>
+    <span class="chip" id="ghs">GIT: OFFLINE</span>
+    <button id="binst" hidden>Install</button>
+    <button id="bgh">GitHub</button>
+  </div>
+</header>
+<main>
+  <div class="bar">
+    <button class="pri" id="bfold">Set app folder</button>
+    <button id="bsync">Pull all from Git</button>
+  </div>
+  <div id="grid" class="grid"></div>
+</main>
+
+<dialog id="dgh"><div class="dh"><h3>GitHub connection</h3><button data-x>X</button></div>
+<div class="db">
+  <div class="two"><label>Owner<input type="text" id="o" autocomplete="off"></label><label>Repo<input type="text" id="r" autocomplete="off"></label></div>
+  <div class="two"><label>Branch<input type="text" id="b"></label><label>Apps path in repo<input type="text" id="p"></label></div>
+  <label>Personal access token (PAT)<input type="password" id="t" autocomplete="off"></label>
+  <label class="ck"><input type="checkbox" id="rem"> Remember token on this device (otherwise kept for this session only)</label>
+  <div class="note">Use a fine-grained PAT limited to this one repo with Contents: read &amp; write.</div>
+  <div class="acts"><button class="pri" id="save">Save &amp; test</button><button class="danger" id="forget">Disconnect</button></div>
+</div></dialog>
+
+<dialog id="dcog"><div class="dh"><h3 id="ctitle">App</h3><button data-x>X</button></div>
+<div class="db">
+  <div id="cinfo" class="note"></div>
+  <div class="acts">
+    <button id="cpull">Update from Git</button>
+    <button id="cfile">Set local file</button>
+  </div>
+  <label>Commit message<input type="text" id="cmsg" value="Update app"></label>
+  <button class="pri" id="ccommit">Commit to Git</button>
+  <div class="hist" id="chist">Version history loads once Git is connected.</div>
+  <button class="danger" id="cdel">Remove from launcher</button>
+</div></dialog>
+
+<input type="file" id="fp" accept=".html,.htm" multiple hidden>
+<input type="file" id="fone" accept=".html,.htm" hidden>
+<div id="toast"></div>
+
+<script>
+const VERSION='0.2.0';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let cfg=Object.assign({owner:'',repo:'',branch:'main',path:'apps'},JSON.parse(localStorage.wfcfg||'{}'));
+let cur=null;
+
+/* storage */
+const db=new Promise((res,rej)=>{const r=indexedDB.open('wf-launcher',1);r.onupgradeneeded=()=>r.result.createObjectStore('apps',{keyPath:'file'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const tx=async(m,f)=>{const d=await db;return new Promise((res,rej)=>{const t=d.transaction('apps',m);const q=f(t.objectStore('apps'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})};
+const getAll=()=>tx('readonly',s=>s.getAll());
+const getOne=f=>tx('readonly',s=>s.get(f));
+const put=a=>tx('readwrite',s=>s.put(a));
+const del=f=>tx('readwrite',s=>s.delete(f));
+
+/* helpers */
+function toast(m,err){const t=$('#toast');t.textContent=m;t.className=err?'err':'';t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3500)}
+function meta(html,file){const d=new DOMParser().parseFromString(html,'text/html');const v=d.querySelector('meta[name="app-version"]');return{name:(d.title||file.replace(/\.html?$/i,'')).trim(),version:v?v.content:'n/a'}}
+async function ingest(file,html,extra){const old=await getOne(file)||{};await put({...old,file,html,...meta(html,file),loaded:Date.now(),...(extra||{})})}
+const tok=()=>sessionStorage.wftoken||localStorage.wftoken||'';
+const ready=()=>cfg.owner&&cfg.repo&&tok();
+
+/* github */
+async function gh(p,o={}){
+  const r=await fetch('https://api.github.com/repos/'+cfg.owner+'/'+cfg.repo+p,{...o,headers:{Authorization:'Bearer '+tok(),Accept:'application/vnd.github+json',...(o.headers||{})}});
+  if(!r.ok){let m=r.status;try{m+=' '+(await r.json()).message}catch{}throw new Error(m)}
+  return r.json();
+}
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,'')),c=>c.charCodeAt(0)));
+const b64e=s=>{let x='';new TextEncoder().encode(s).forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
+const rpath=f=>(cfg.path?cfg.path.replace(/^\/|\/$/g,'')+'/':'')+encodeURIComponent(f);
+async function pull(file){
+  const j=await gh('/contents/'+rpath(file)+'?ref='+encodeURIComponent(cfg.branch));
+  if(!j.content)throw new Error(file+' is too large for the contents API (1 MB limit)');
+  await ingest(file,b64d(j.content),{sha:j.sha,synced:Date.now()});
+}
+async function pullAll(){
+  if(!ready())return toast('Connect to GitHub first',1);
+  try{
+    const l=await gh('/contents/'+cfg.path.replace(/^\/|\/$/g,'')+'?ref='+encodeURIComponent(cfg.branch));
+    const fs=l.filter(x=>x.type==='file'&&/\.html?$/i.test(x.name));
+    for(const f of fs)await pull(f.name);
+    toast(fs.length+' app(s) updated from Git');render();
+  }catch(e){toast(e.message,1)}
+}
+async function commit(a,msg){
+  let sha;try{sha=(await gh('/contents/'+rpath(a.file)+'?ref='+encodeURIComponent(cfg.branch))).sha}catch(e){if(!/^404/.test(e.message))throw e}
+  const r=await gh('/contents/'+rpath(a.file),{method:'PUT',body:JSON.stringify({message:msg||'Update '+a.file,content:b64e(a.html),branch:cfg.branch,sha})});
+  await put({...a,sha:r.content.sha,synced:Date.now()});
+}
+
+/* launcher */
+async function setFolder(){
+  if(window.showDirectoryPicker){
+    try{
+      const h=await showDirectoryPicker();let n=0;
+      for await(const [name,e] of h.entries()){
+        if(e.kind==='file'&&/\.html?$/i.test(name)&&!/launcher/i.test(name)){await ingest(name,await(await e.getFile()).text());n++}
+      }
+      toast(n+' app(s) loaded');render();
+    }catch(e){if(e.name!=='AbortError')toast(e.message,1)}
+  }else $('#fp').click();
+}
+async function readFiles(files,only){
+  let n=0;
+  for(const f of files){if(!/\.html?$/i.test(f.name))continue;await ingest(only||f.name,await f.text());n++}
+  toast(n+' app(s) loaded');render();
+}
+function launch(a){
+  const u=URL.createObjectURL(new Blob([a.html],{type:'text/html'}));
+  if(!window.open(u,'_blank'))location.href=u;
+}
+async function render(){
+  const apps=(await getAll()).sort((a,b)=>a.name.localeCompare(b.name));
+  const g=$('#grid');
+  if(!apps.length){g.innerHTML='<div class="empty">No apps loaded.<br>Set an app folder or pull from Git.</div>';return}
+  g.innerHTML=apps.map((a,i)=>`<div class="card"><div class="id">APP-${String(i+1).padStart(2,'0')}</div>
+  <h2>${esc(a.name)}</h2><div class="file">${esc(a.file)}</div>
+  <span class="chip t">v${esc(a.version)}</span> <span class="chip ${a.sha?'g':'a'}">${a.sha?'Git linked':'Local only'}</span>
+  <div class="row"><button class="pri" data-l="${esc(a.file)}">Launch</button><button class="cog" data-c="${esc(a.file)}" title="Settings">&#9881;</button></div></div>`).join('');
+}
+async function openCog(file){
+  cur=await getOne(file);if(!cur)return;
+  $('#ctitle').textContent=cur.name;
+  $('#cinfo').innerHTML=`File: ${esc(cur.file)}<br>Local version: v${esc(cur.version)}<br>Last sync: ${cur.synced?new Date(cur.synced).toLocaleString():'never'}`;
+  $('#chist').textContent=ready()?'Loading history...':'Connect GitHub to see version history.';
+  $('#dcog').showModal();
+  if(!ready())return;
+  try{
+    const c=await gh('/commits?sha='+encodeURIComponent(cfg.branch)+'&path='+encodeURIComponent((cfg.path?cfg.path+'/':'')+cur.file)+'&per_page=5');
+    let rv='not in repo';
+    try{const j=await gh('/contents/'+rpath(cur.file)+'?ref='+encodeURIComponent(cfg.branch));rv='v'+meta(b64d(j.content),cur.file).version+(j.sha===cur.sha?' (matches local)':' (differs from local)')}catch(e){}
+    $('#chist').innerHTML='<b>Repo version: '+esc(rv)+'</b>'+(c.length?c.map(x=>`<div>${esc(x.sha.slice(0,7))} &middot; ${new Date(x.commit.author.date).toLocaleDateString()} &middot; ${esc(x.commit.message.split('\n')[0])}</div>`).join(''):'<div>No commits yet for this file.</div>');
+  }catch(e){$('#chist').textContent=e.message}
+}
+function status(){const s=$('#ghs');s.textContent=ready()?'GIT: '+cfg.owner+'/'+cfg.repo:'GIT: OFFLINE';s.className='chip '+(ready()?'g':'r')}
+function tick(){$('#date').textContent=new Date().toLocaleString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}
+
+/* PWA (service workers need http/https, so this is skipped when opened as a local file) */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+let ip=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();ip=e;$('#binst').hidden=false});
+addEventListener('appinstalled',()=>{$('#binst').hidden=true;toast('Installed')});
+$('#binst').onclick=async()=>{if(ip){ip.prompt();await ip.userChoice;ip=null;$('#binst').hidden=true}};
+/* events */
+$('#ver').textContent='Launcher v'+VERSION;
+tick();setInterval(tick,15000);status();render();
+$('#bfold').onclick=setFolder;
+$('#bsync').onclick=pullAll;
+$('#fp').onchange=e=>{readFiles([...e.target.files]);e.target.value=''};
+$('#fone').onchange=async e=>{if(cur){await readFiles([...e.target.files],cur.file);$('#dcog').close()}e.target.value=''};
+document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
+$('#grid').onclick=async e=>{
+  const l=e.target.closest('[data-l]'),c=e.target.closest('[data-c]');
+  if(l)launch(await getOne(l.dataset.l));
+  if(c)openCog(c.dataset.c);
+};
+$('#bgh').onclick=()=>{$('#o').value=cfg.owner;$('#r').value=cfg.repo;$('#b').value=cfg.branch;$('#p').value=cfg.path;$('#t').value=tok();$('#rem').checked=!!localStorage.wftoken;$('#dgh').showModal()};
+$('#save').onclick=async()=>{
+  cfg={owner:$('#o').value.trim(),repo:$('#r').value.trim(),branch:$('#b').value.trim()||'main',path:$('#p').value.trim()};
+  localStorage.wfcfg=JSON.stringify(cfg);
+  sessionStorage.removeItem('wftoken');localStorage.removeItem('wftoken');
+  (($('#rem').checked)?localStorage:sessionStorage).wftoken=$('#t').value.trim();
+  try{const r=await gh('');toast('Connected to '+r.full_name);$('#dgh').close()}catch(e){toast('Connection failed: '+e.message,1)}
+  status();
+};
+$('#forget').onclick=()=>{sessionStorage.removeItem('wftoken');localStorage.removeItem('wftoken');$('#t').value='';status();toast('Token cleared')};
+$('#cpull').onclick=async()=>{
+  if(!ready())return toast('Connect to GitHub first',1);
+  try{await pull(cur.file);toast(cur.file+' updated from Git');$('#dcog').close();render()}catch(e){toast(e.message,1)}
+};
+$('#ccommit').onclick=async()=>{
+  if(!ready())return toast('Connect to GitHub first',1);
+  try{await commit(cur,$('#cmsg').value.trim());toast('Committed '+cur.file);$('#dcog').close();render()}catch(e){toast(e.message,1)}
+};
+$('#cfile').onclick=()=>$('#fone').click();
+$('#cdel').onclick=async()=>{if(confirm('Remove '+cur.name+' from the launcher? (Repo is untouched)')){await del(cur.file);$('#dcog').close();render()}};
+</script>
+</body>
+</html>
