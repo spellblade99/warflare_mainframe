@@ -1,6 +1,6 @@
 {
-  "name": "Warflare Launcher",
-  "short_name": "Launcher",
+  "name": "Warflare Mainframe",
+  "short_name": "Mainframe",
   "description": "Neural network app hub",
   "start_url": "./launcher.html",
   "scope": "./",
