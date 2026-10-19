@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.4.0">
+<meta name="app-version" content="0.5.0">
 <meta name="theme-color" content="#0B0C10">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -129,6 +129,10 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 #hud{opacity:.4}
 @media(prefers-reduced-motion:reduce){.orb,#tk:after{animation:none!important}}
 @media(max-width:760px){header{grid-template-columns:1fr;text-align:center;margin:0 10px}header .meta,.brand{justify-content:center}h1{font-size:22px}.wrap2{grid-template-columns:1fr;padding:12px}.hexbox{display:none}.nav{display:flex;flex-wrap:wrap}.nb{width:auto;flex:1}#tk{padding:0 44px}}
+#appview{position:fixed;inset:0;z-index:70;background:#0B0C10;display:flex;flex-direction:column}
+#appview[hidden]{display:none}
+.avbar{display:flex;align-items:center;gap:14px;padding:8px 14px;background:rgba(15,20,27,.97);border-bottom:1px solid rgba(0,240,255,.4);font-family:var(--hd);letter-spacing:.15em;text-transform:uppercase;color:var(--cy)}
+#avf{flex:1;border:0;width:100%;background:#0B0C10}
 </style>
 </head>
 <body>
@@ -184,12 +188,13 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
   <button class="danger" id="cdel">Remove from launcher</button>
 </div></dialog>
 
+<div id="appview" hidden><div class="avbar"><button id="avback">&lt; Mainframe</button><span id="avname"></span></div><iframe id="avf" title="App"></iframe></div>
 <input type="file" id="fp" accept=".html,.htm" multiple hidden>
 <input type="file" id="fone" accept=".html,.htm" hidden>
 <div id="toast"></div>
 
 <script>
-const VERSION='0.4.0';
+const VERSION='0.5.0';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let cfg=Object.assign({owner:'',repo:'',branch:'main',path:'apps'},JSON.parse(localStorage.wfcfg||'{}'));
@@ -257,9 +262,18 @@ async function readFiles(files,only){
   toast(n+' app(s) loaded');render();
 }
 function launch(a){
-  const u=URL.createObjectURL(new Blob([a.html],{type:'text/html'}));
-  if(!window.open(u,'_blank'))location.href=u;
+  // Opens the app inside the launcher. The injected style hides the app's own screen frame and ticker so borders don't double up.
+  const css='<style>.frame,#tk{display:none!important}body{padding:0!important}header{margin-top:10px!important}</style>';
+  const h=/<\/head>/i.test(a.html)?a.html.replace(/<\/head>/i,()=>css+'</head>'):css+a.html;
+  $('#avname').textContent=a.name;$('#avf').srcdoc=h;$('#appview').hidden=false;
+  history.pushState({app:1},'');
 }
+function closeApp(fromPop){
+  $('#appview').hidden=true;$('#avf').srcdoc='';
+  if(!fromPop&&history.state&&history.state.app)history.back();
+}
+addEventListener('popstate',()=>{if(!$('#appview').hidden)closeApp(true)});
+$('#avback').onclick=()=>closeApp();
 async function render(){
   const apps=(await getAll()).sort((a,b)=>a.name.localeCompare(b.name));
   $('#tk').textContent='> SYSTEM STABLE // '+apps.length+' MODULE(S) LOADED // WELCOME BACK, RUNNER...';
