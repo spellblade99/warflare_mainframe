@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.1.1">
+<meta name="app-version" content="0.1.2">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -112,6 +112,7 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
   <div class="meta">
     <span class="chip c" id="ver"></span><span class="chip" id="dirty"></span>
     <button id="btog">Browse</button>
+    <button id="bimp">Import</button><input type="file" id="fimp" accept=".json" hidden>
     <button id="bpull">Pull</button><button class="pri" id="bcom">Commit</button><button id="bgh">GitHub</button>
   </div>
 </header>
@@ -144,7 +145,7 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 <div id="toast"></div>
 
 <script>
-const VER='0.1.1',$=s=>document.querySelector(s);
+const VER='0.1.2',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -300,6 +301,18 @@ $('#save').onclick=async()=>{
   ($('#rem').checked?localStorage:sessionStorage).wvtok=$('#t').value.trim();
   try{const r=await gh('');toast('Connected to '+r.full_name);$('#dgh').close()}catch(e){toast('Failed: '+e.message,1)}};
 
+$('#bimp').onclick=()=>$('#fimp').click();
+$('#fimp').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const b=JSON.parse(await f.text());
+    if(b.format!=='wv-bundle'||!Array.isArray(b.files))throw new Error('Not a vault bundle file');
+    if(!confirm('Import '+b.files.length+' items? Items with the same id will be replaced.'))return;
+    for(const x of b.files)await store({...(F.get(x.path)||{}),path:x.path,data:x.data,dirty:true,del:false});
+    const u=b.files.find(x=>kind(x.path)==='u');if(u)ui.u=u.data.id;ui.p=ui.w=null;ui.tag='';
+    render();toast(b.files.length+' items imported. Review them, then press Commit.');
+  }catch(err){toast(err.message,1)}
+};
 /* init */
 $('#ver').textContent='v'+VER;
 function tick(){const d=new Date();$('#clk').textContent=d.toLocaleTimeString([],{hour12:false});$('#dt').textContent=d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'})+' // SYNC: '+(ready()?'OK':'OFFLINE')}
