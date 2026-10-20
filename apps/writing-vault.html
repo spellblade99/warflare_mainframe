@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.1.2">
+<meta name="app-version" content="0.2.0">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -102,6 +102,14 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 #hud{opacity:.4}
 @media(prefers-reduced-motion:reduce){.orb,#tk:after{animation:none!important}}
 @media(max-width:760px){header{grid-template-columns:1fr;text-align:center;margin:0 10px}header .meta,.brand{justify-content:center}h1{font-size:22px}.wrap2{grid-template-columns:1fr;padding:12px}.hexbox{display:none}.nav{display:flex;flex-wrap:wrap}.nb{width:auto;flex:1}#tk{padding:0 44px}}
+#stage{position:relative;height:66vh;min-height:340px;overflow:hidden;border:1px solid rgba(0,240,255,.4);touch-action:none;cursor:grab;background:rgba(4,7,10,.6);background-image:radial-gradient(rgba(0,240,255,.18) 1px,transparent 1px);background-size:24px 24px}
+#world{position:absolute;left:0;top:0;transform-origin:0 0}#edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+#edges .ln{stroke:#00F0FF;stroke-width:2}#edges .hit{stroke:transparent;stroke-width:18;pointer-events:stroke;cursor:pointer}
+#edges text{fill:#FFB800;font:12px var(--mono);text-anchor:middle;paint-order:stroke;stroke:#0B0C10;stroke-width:4px;pointer-events:all;cursor:pointer}
+.gn{position:absolute;width:170px;height:62px;padding:6px 9px;background:rgba(23,30,40,.96);border:1px solid var(--cy);clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));cursor:grab;user-select:none;-webkit-user-select:none}
+.gn.src{border-color:var(--amb);background:rgba(255,184,0,.18)}.gh{display:flex;justify-content:space-between;align-items:center}
+.gb b{cursor:pointer;margin-left:10px;color:var(--mut);font-weight:400}.gb b:hover{color:var(--amb)}
+.gt{font-weight:700;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style></head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
@@ -126,10 +134,16 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
   </aside>
   <section class="main">
     <div class="crumb" id="crumb"></div>
-    <div class="tabs"><button class="on">List</button><button disabled title="Next slice">Canvas</button><button disabled title="Later slice">Setting timeline</button><button disabled title="Later slice">Story timeline</button></div>
-    <div class="tool"><input type="text" id="q" placeholder="Search name, tags, summary"><select id="ft"></select><select id="nt"></select><button class="pri" id="nadd">+ New</button></div>
+    <div class="tabs"><button id="tl" class="on">List</button><button id="tc">Canvas</button><button disabled title="Later slice">Setting timeline</button><button disabled title="Later slice">Story timeline</button></div>
+    <div id="listv"><div class="tool"><input type="text" id="q" placeholder="Search name, tags, summary"><select id="ft"></select><select id="nt"></select><button class="pri" id="nadd">+ New</button></div>
     <div class="tags" id="tags"></div>
-    <div id="list"></div>
+    <div id="list"></div></div>
+    <div id="canv" hidden>
+      <div class="tool"><select id="bsel"></select><button class="sm" id="badd">+ Board</button><button class="sm" id="bren">&#9998;</button><button class="sm dg" id="bdel">&#10005;</button></div>
+      <div class="tool"><select id="addsel"></select><button class="sm" id="addn">Add</button><button class="sm" id="addscope">Add all in scope</button><button class="sm" id="lmode">Link: off</button><button class="sm" id="zin">+</button><button class="sm" id="zout">&minus;</button><button class="sm" id="zfit">Fit</button></div>
+      <div id="stage"><div id="world"><svg id="edges" width="1" height="1"></svg><div id="nodes"></div></div></div>
+      <div class="note" id="chint" style="margin-top:8px"></div>
+    </div>
   </section>
 </div>
 
@@ -145,7 +159,7 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 <div id="toast"></div>
 
 <script>
-const VER='0.1.2',$=s=>document.querySelector(s);
+const VER='0.2.0',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -205,7 +219,7 @@ async function run(label,fn){
 }
 
 /* UI state */
-const ui={u:localStorage.wvu||null,p:null,w:null,q:'',type:'',tag:''};
+const ui={u:localStorage.wvu||null,p:null,w:null,q:'',type:'',tag:'',tab:'list',b:null,lm:false,src:null};
 const ids=()=>ui.w?[ui.w]:ui.p?[ui.p,...all('w',ui.u).filter(w=>w.pid===ui.p).map(w=>w.id)]:null;
 function render(){
   const us=all('u').sort(by);
@@ -228,6 +242,8 @@ function render(){
   const n=[...F.values()].filter(r=>r.dirty).length;
   const d=$('#dirty');d.textContent=n?n+' unsynced':'Synced';d.className='chip '+(n?'a':'g');
   $('#tk').textContent='> SYSTEM STABLE // '+(n?n+' CHANGE(S) UNSYNCED':'DATA SYNCED')+' // WELCOME BACK, RUNNER...';
+  $('#listv').hidden=ui.tab!=='list';$('#canv').hidden=ui.tab!=='canvas';$('#tl').className=ui.tab==='list'?'on':'';$('#tc').className=ui.tab==='canvas'?'on':'';
+  if(ui.tab==='canvas')canvas();
 }
 
 /* hierarchy actions */
@@ -253,6 +269,7 @@ function openEd(e,isNew){
   <div class="two"><label>Type<select id="et">${Object.keys(TY).map(t=>`<option${e.type===t?' selected':''}>${t}</option>`).join('')}</select></label><label>Tags (comma separated)<input type="text" id="eg" value="${esc((e.tags||[]).join(', '))}"></label></div>
   <label>Summary<textarea id="es" style="min-height:60px">${esc(e.summary)}</textarea></label>
   <div><div class="lab">Details</div><div id="fl">${(e.fields||[]).map(f=>fieldRow(f.k,f.v)).join('')}</div><button class="sm" id="af">+ Field</button></div>
+  <div><div class="lab">Relationships</div>${(()=>{const nm=i=>(get('e',ui.u,i)||{}).name||'?',rl=all('r',ui.u).filter(r=>r.from===e.id||r.to===e.id);return rl.map(r=>`<div class="ck">${r.from===e.id?'this &rarr; '+esc(r.label||'linked')+' &rarr; '+esc(nm(r.to)):esc(nm(r.from))+' &rarr; '+esc(r.label||'linked')+' &rarr; this'} <button class="sm dg" data-rr="${r.id}">&#10005;</button></div>`).join('')||'<div class="note">None yet. Draw lines on the Canvas tab.</div>'})()}</div>
   <label>Notes<textarea id="eno">${esc(e.notes)}</textarea></label>
   <div><div class="lab">Appears in</div>${ps.map(p=>chk(p.id,p.name,0)+ws.filter(w=>w.pid===p.id).sort(by).map(w=>chk(w.id,w.name,22)).join('')).join('')||'<div class="note">No projects yet.</div>'}</div>
   <div class="acts"><button class="pri" id="esv">Save</button>${isNew?'':'<button class="dg" id="edl">Delete</button>'}</div>`;
@@ -282,9 +299,10 @@ $('#list').onclick=e=>{
   const r=e.target.closest('[data-e]');if(r)openEd(structuredClone(get('e',ui.u,r.dataset.e)),false)};
 $('#edb').onclick=async e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.rr){await rm('r',ui.u,b.dataset.rr);b.parentElement.remove();render()}
   if(b.id==='af')$('#fl').insertAdjacentHTML('beforeend',fieldRow('',''));
   if(b.dataset.rf!==undefined)b.parentElement.remove();
-  if(b.id==='edl'&&confirm('Delete this entity?')){await rm('e',ui.u,cur.id);$('#ed').close();render()}
+  if(b.id==='edl'&&confirm('Delete this entity?')){await rm('e',ui.u,cur.id);for(const r of all('r',ui.u).filter(r=>r.from===cur.id||r.to===cur.id))await rm('r',ui.u,r.id);$('#ed').close();render()}
   if(b.id==='esv'){
     const d=cur;d.name=$('#en').value.trim()||'Untitled';d.type=$('#et').value;
     d.tags=$('#eg').value.split(',').map(s=>s.trim().replace(/^#/,'')).filter(Boolean);
@@ -300,6 +318,95 @@ $('#save').onclick=async()=>{
   localStorage.wvcfg=JSON.stringify(cfg);sessionStorage.removeItem('wvtok');localStorage.removeItem('wvtok');
   ($('#rem').checked?localStorage:sessionStorage).wvtok=$('#t').value.trim();
   try{const r=await gh('');toast('Connected to '+r.full_name);$('#dgh').close()}catch(e){toast('Failed: '+e.message,1)}};
+
+/* ===== Canvas (slice 2): boards hold box positions, relations are universe-level records ===== */
+const NW=170,NH=62,vw={x:20,y:20,k:1},st=$('#stage'),ptr=new Map();let drag=null;
+const boards=()=>all('b',ui.u).sort(by),curB=()=>boards().find(b=>b.id===ui.b)||boards()[0]||null;
+const applyView=()=>{$('#world').style.transform=`translate(${vw.x}px,${vw.y}px) scale(${vw.k})`};
+function zoom(f,cx,cy){const r=st.getBoundingClientRect(),k=Math.max(.2,Math.min(2.5,vw.k*f)),px=(cx==null?r.left+r.width/2:cx)-r.left,py=(cy==null?r.top+r.height/2:cy)-r.top;vw.x=px-(px-vw.x)*k/vw.k;vw.y=py-(py-vw.y)*k/vw.k;vw.k=k;applyView()}
+const bd=(f,t)=>{const dx=f.x-t.x,dy=f.y-t.y,k=Math.min(dx?NW/2/Math.abs(dx):1e9,dy?NH/2/Math.abs(dy):1e9);return{x:t.x+dx*k,y:t.y+dy*k}};
+function edges(){
+  const b=curB();if(!b)return;
+  const c=id=>({x:b.nodes[id].x+NW/2,y:b.nodes[id].y+NH/2});
+  $('#edges').innerHTML='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#00F0FF"/></marker></defs>'+
+  all('r',ui.u).filter(r=>b.nodes[r.from]&&b.nodes[r.to]).map(r=>{
+    const a=c(r.from),z=c(r.to),p=bd(z,a),q=bd(a,z),mx=(p.x+q.x)/2,my=(p.y+q.y)/2;
+    return `<line class="ln" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" marker-end="url(#ar)"/><line class="hit" data-r="${r.id}" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/><text class="el" data-r="${r.id}" x="${mx}" y="${my-5}">${esc(r.label||'linked')}</text>`}).join('');
+}
+function canvas(){
+  const bs=boards(),b=curB();ui.b=b?b.id:null;
+  $('#bsel').innerHTML=bs.map(x=>`<option value="${x.id}"${b&&x.id===b.id?' selected':''}>${esc(x.name)}</option>`).join('');
+  const es=all('e',ui.u),on=b?b.nodes:{};
+  $('#addsel').innerHTML='<option value="">Add entity...</option>'+es.filter(e=>!on[e.id]).sort(by).map(e=>`<option value="${e.id}">${esc(e.name)} (${e.type})</option>`).join('');
+  $('#lmode').textContent='Link: '+(ui.lm?'ON':'off');$('#lmode').className='sm'+(ui.lm?' pri':'');
+  $('#chint').textContent=ui.lm?(ui.src?'Now tap the box to link TO.':'Tap the box to link FROM, then the box to link to. Tap a line to edit or delete it.'):'Drag boxes to arrange. Drag the background to pan, pinch or scroll to zoom. Tap a line to edit its label.';
+  applyView();
+  if(!b){$('#nodes').innerHTML='';$('#edges').innerHTML='';return}
+  const em=new Map(es.map(e=>[e.id,e]));
+  $('#nodes').innerHTML=Object.entries(b.nodes).filter(([id])=>em.has(id)).map(([id,p])=>{const e=em.get(id);
+    return `<div class="gn ${ui.src===id?'src':''}" data-n="${id}" style="left:${p.x}px;top:${p.y}px"><div class="gh"><span class="chip c">${e.type}</span><span class="gb"><b data-ed="${id}">&#9998;</b><b data-rm="${id}">&#10005;</b></span></div><div class="gt">${esc(e.name)}</div></div>`}).join('');
+  edges();
+}
+async function addB(){const n=ask('Board name','Main');if(!n)return;const id=uid();await save('b',ui.u,{id,name:n,nodes:{}});ui.b=id;render()}
+async function showTab(t){
+  ui.tab=t;
+  if(t==='canvas'&&ui.u&&!boards().length){const id=uid();await save('b',ui.u,{id,name:'Main',nodes:{}});ui.b=id}
+  render()}
+async function tapNode(id){
+  if(!ui.lm)return;
+  if(!ui.src){ui.src=id;return canvas()}
+  if(ui.src===id){ui.src=null;return canvas()}
+  const l=prompt('Relationship label (e.g. mentor of, rivals, born in)','');
+  if(l!==null){const r={id:uid(),from:ui.src,to:id,label:l.trim()};await save('r',ui.u,r)}
+  ui.src=null;render()}
+async function editEdge(id){
+  const r=get('r',ui.u,id);if(!r)return;
+  const v=prompt('Relationship label. Clear it and press OK to delete this line.',r.label||'');if(v===null)return;
+  if(!v.trim()){if(confirm('Delete this relationship?'))await rm('r',ui.u,id)}else{r.label=v.trim();await save('r',ui.u,r)}
+  render()}
+const dist=()=>{const p=[...ptr.values()];return Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)||1};
+st.onpointerdown=e=>{
+  if(e.target.closest('[data-ed],[data-rm]'))return;
+  const b=curB();if(!b)return;
+  ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});st.setPointerCapture(e.pointerId);
+  if(ptr.size===2){drag={t:'pinch',d:dist()};return}
+  const n=e.target.closest('[data-n]');
+  drag=n?{t:'node',id:n.dataset.n,sx:e.clientX,sy:e.clientY,ox:b.nodes[n.dataset.n].x,oy:b.nodes[n.dataset.n].y,moved:false}:{t:'pan',sx:e.clientX,sy:e.clientY,ox:vw.x,oy:vw.y,moved:false}};
+st.onpointermove=e=>{
+  if(!ptr.has(e.pointerId))return;ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});if(!drag)return;
+  if(drag.t==='pinch'){if(ptr.size===2){const d=dist(),p=[...ptr.values()];zoom(d/drag.d,(p[0].x+p[1].x)/2,(p[0].y+p[1].y)/2);drag.d=d}return}
+  const dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;
+  if(drag.t==='pan'&&drag.moved){vw.x=drag.ox+dx;vw.y=drag.oy+dy;applyView()}
+  if(drag.t==='node'&&drag.moved&&!ui.lm){const p=curB().nodes[drag.id];p.x=Math.round(drag.ox+dx/vw.k);p.y=Math.round(drag.oy+dy/vw.k);const el=st.querySelector(`[data-n="${drag.id}"]`);el.style.left=p.x+'px';el.style.top=p.y+'px';edges()}};
+st.onpointerup=async e=>{
+  ptr.delete(e.pointerId);const d=drag;if(d&&d.t==='pinch'){if(ptr.size<2)drag=null;return}
+  drag=null;if(!d)return;
+  if(d.t==='node'){if(d.moved&&!ui.lm)await save('b',ui.u,curB());else if(!d.moved)tapNode(d.id)}
+  else if(!d.moved){const t=document.elementFromPoint(e.clientX,e.clientY),r=t&&t.closest('[data-r]');if(r)editEdge(r.dataset.r)}};
+st.onpointercancel=()=>{ptr.clear();drag=null};
+st.onwheel=e=>{e.preventDefault();zoom(e.deltaY<0?1.1:.9,e.clientX,e.clientY)};
+$('#nodes').onclick=async e=>{
+  const ed=e.target.closest('[data-ed]'),rm_=e.target.closest('[data-rm]');
+  if(ed)openEd(structuredClone(get('e',ui.u,ed.dataset.ed)),false);
+  if(rm_){const b=curB();delete b.nodes[rm_.dataset.rm];await save('b',ui.u,b);render()}};
+$('#tl').onclick=()=>showTab('list');$('#tc').onclick=()=>showTab('canvas');
+$('#bsel').onchange=e=>{ui.b=e.target.value;ui.src=null;canvas()};
+$('#badd').onclick=addB;
+$('#bren').onclick=async()=>{const b=curB(),n=b&&ask('Rename board',b.name);if(n){b.name=n;await save('b',ui.u,b);render()}};
+$('#bdel').onclick=async()=>{const b=curB();if(b&&confirm('Delete this board? Entities and relationships are kept.')){await rm('b',ui.u,b.id);ui.b=null;render()}};
+$('#lmode').onclick=()=>{ui.lm=!ui.lm;ui.src=null;canvas()};
+$('#zin').onclick=()=>zoom(1.2);$('#zout').onclick=()=>zoom(1/1.2);
+$('#zfit').onclick=()=>{const b=curB();if(!b)return;const p=Object.values(b.nodes);if(!p.length)return;
+  const x0=Math.min(...p.map(a=>a.x)),y0=Math.min(...p.map(a=>a.y)),x1=Math.max(...p.map(a=>a.x))+NW,y1=Math.max(...p.map(a=>a.y))+NH,r=st.getBoundingClientRect();
+  vw.k=Math.max(.2,Math.min(1.2,r.width/(x1-x0+80),r.height/(y1-y0+80)));vw.x=(r.width-(x1-x0)*vw.k)/2-x0*vw.k;vw.y=(r.height-(y1-y0)*vw.k)/2-y0*vw.k;applyView()};
+async function place(ids){
+  const b=curB();if(!b)return;let n=Object.keys(b.nodes).length;
+  const r=st.getBoundingClientRect();
+  ids.forEach((id,i)=>{if(ids.length===1){b.nodes[id]={x:Math.round((r.width/2-vw.x)/vw.k-NW/2),y:Math.round((r.height/2-vw.y)/vw.k-NH/2)}}else{b.nodes[id]={x:40+(n%5)*210,y:40+Math.floor(n/5)*100};n++}});
+  await save('b',ui.u,b);render()}
+$('#addn').onclick=()=>{const v=$('#addsel').value;if(v)place([v])};
+$('#addscope').onclick=()=>{const b=curB();if(!b)return;const sc=ids();
+  place(all('e',ui.u).filter(e=>!b.nodes[e.id]&&(!sc||(e.refs||[]).some(r=>sc.includes(r)))).sort(by).map(e=>e.id))};
 
 $('#bimp').onclick=()=>$('#fimp').click();
 $('#fimp').onchange=async e=>{
