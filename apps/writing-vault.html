@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.3.0">
+<meta name="app-version" content="0.4.0">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -118,6 +118,15 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 .gi{position:absolute;right:8px;bottom:6px;width:34px;height:34px;object-fit:cover;border:1px solid var(--cy)}.gn.has .gt{max-width:calc(100% - 44px)}
 #sh a{color:var(--cy);cursor:pointer;text-decoration:underline}#lb{width:auto;max-width:96vw}#lb img{max-width:90vw;max-height:80vh;display:block}
 @media print{.wrap,header,.frame,#tk,.hud,.no-print,[data-x],#toast{display:none!important}body{background:#fff!important;color:#000!important;padding:0!important}dialog#sh{position:static!important;display:block;width:auto;max-height:none;clip-path:none;border:0;background:#fff!important}#sh *{color:#000!important;background:transparent!important}#sh .db{max-height:none}}
+.ev{display:grid;grid-template-columns:130px 1fr auto;gap:12px;padding:10px 0 10px 16px;border-left:2px solid var(--cy);position:relative;margin-left:8px}
+.ev:before{content:"";position:absolute;left:-6px;top:16px;width:10px;height:10px;background:var(--cy)}
+.evd{color:var(--amb);font-family:var(--hd);letter-spacing:.08em}.evb i{margin-right:6px}
+details.sc{border:1px solid rgba(0,240,255,.25);background:rgba(11,12,16,.6);margin:6px 0}
+details.sc summary{display:flex;gap:10px;align-items:center;padding:8px 10px;cursor:pointer;flex-wrap:wrap}
+.sc .no{color:var(--amb);font-family:var(--hd);min-width:26px}.sc .mv{margin-left:auto;display:flex;gap:6px}
+.scb{padding:8px 14px 12px;display:grid;gap:8px}.scb a{color:var(--cy);cursor:pointer;text-decoration:underline}
+.pk .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+@media(max-width:760px){.ev{grid-template-columns:1fr auto}.evd{grid-column:1/-1}}
 </style></head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
@@ -142,7 +151,7 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
   </aside>
   <section class="main">
     <div class="crumb" id="crumb"></div>
-    <div class="tabs"><button id="tl" class="on">List</button><button id="tc">Canvas</button><button disabled title="Later slice">Setting timeline</button><button disabled title="Later slice">Story timeline</button></div>
+    <div class="tabs"><button id="tl" class="on">List</button><button id="tc">Canvas</button><button id="ts">Setting timeline</button><button id="tst">Story timeline</button></div>
     <div id="listv"><div class="tool"><input type="text" id="q" placeholder="Search name, tags, summary"><select id="ft"></select><select id="nt"></select><button class="pri" id="nadd">+ New</button></div>
     <div class="tags" id="tags"></div>
     <div id="list"></div></div>
@@ -152,6 +161,8 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
       <div id="stage"><div id="world"><svg id="edges" width="1" height="1"></svg><div id="nodes"></div></div></div>
       <div class="note" id="chint" style="margin-top:8px"></div>
     </div>
+    <div id="setv" hidden><div class="tool"><input type="text" id="sq" placeholder="Search events"><button class="pri" id="sadd">+ Event</button></div><div id="sl"></div></div>
+    <div id="storyv" hidden><div class="tool"><button class="sm" id="cmode">Order: story</button><button class="pri" id="scadd">+ Scene</button></div><div class="note" id="sthint" style="margin-bottom:8px"></div><div id="stl"></div></div>
   </section>
 </div>
 
@@ -167,10 +178,12 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 <dialog id="sh"><div class="dh"><h3 id="sht">Entity</h3><button data-x>X</button></div><div class="db" id="shb"></div></dialog>
 <dialog id="lb"><div class="dh"><h3>Image</h3><button data-x>X</button></div><div class="db"><img id="lbi" alt=""></div></dialog>
 <input type="file" id="fimg" accept="image/*" multiple hidden>
+<dialog id="td"><div class="dh"><h3 id="tdt">Edit</h3><button data-x>X</button></div><div class="db" id="tdb"></div></dialog>
+<datalist id="edl"></datalist>
 <div id="toast"></div>
 
 <script>
-const VER='0.3.0',$=s=>document.querySelector(s);
+const VER='0.4.0',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -230,7 +243,7 @@ async function run(label,fn){
 }
 
 /* UI state */
-const ui={u:localStorage.wvu||null,p:null,w:null,q:'',type:'',tag:'',tab:'list',b:null,lm:false,src:null};
+const ui={u:localStorage.wvu||null,p:null,w:null,q:'',type:'',tag:'',tab:'list',chrono:false,b:null,lm:false,src:null};
 const ids=()=>ui.w?[ui.w]:ui.p?[ui.p,...all('w',ui.u).filter(w=>w.pid===ui.p).map(w=>w.id)]:null;
 function render(){
   const us=all('u').sort(by);
@@ -253,8 +266,9 @@ function render(){
   const n=[...F.values()].filter(r=>r.dirty).length;
   const d=$('#dirty');d.textContent=n?n+' unsynced':'Synced';d.className='chip '+(n?'a':'g');
   $('#tk').textContent='> SYSTEM STABLE // '+(n?n+' CHANGE(S) UNSYNCED':'DATA SYNCED')+' // WELCOME BACK, RUNNER...';
-  $('#listv').hidden=ui.tab!=='list';$('#canv').hidden=ui.tab!=='canvas';$('#tl').className=ui.tab==='list'?'on':'';$('#tc').className=ui.tab==='canvas'?'on':'';
-  if(ui.tab==='canvas')canvas();
+  for(const [t,v,b] of [['list','listv','tl'],['canvas','canv','tc'],['setting','setv','ts'],['story','storyv','tst']]){$('#'+v).hidden=ui.tab!==t;$('#'+b).className=ui.tab===t?'on':''}
+  $('#edl').innerHTML=es.slice().sort(by).map(e=>`<option value="${esc(e.name)}" label="${e.type}">`).join('');
+  if(ui.tab==='canvas')canvas();if(ui.tab==='setting')setting();if(ui.tab==='story')story();
 }
 
 /* hierarchy actions */
@@ -266,7 +280,8 @@ async function ren(k,id){const d=k==='u'?get('u',id,id):get(k,ui.u,id);const n=d
 async function del(k,id){
   if(k==='u'){if(!confirm('Delete this universe and everything in it?'))return;for(const p of [...F.keys()].filter(p=>p.startsWith(`u/${id}/`)))await rm(kind(p),id,p.split('/').pop().replace('.json',''));ui.u=null}
   else{if(!confirm('Delete this '+(k==='p'?'project and its works':'work')+'? (Entities are kept.)'))return;
-    if(k==='p')for(const w of all('w',ui.u).filter(w=>w.pid===id))await rm('w',ui.u,w.id);
+    if(k==='p')for(const w of all('w',ui.u).filter(w=>w.pid===id)){for(const s of all('s',ui.u).filter(s=>s.wid===w.id))await rm('s',ui.u,s.id);await rm('w',ui.u,w.id)}
+    if(k==='w')for(const s of all('s',ui.u).filter(s=>s.wid===id))await rm('s',ui.u,s.id);
     await rm(k,ui.u,id);if(ui.p===id||ui.w===id)ui.p=ui.w=null}
   render()}
 
@@ -481,6 +496,97 @@ $('#edb').onchange=e=>{if(e.target.id==='et'){const c=$('#edb .cs');if(c)c.hidde
 $('#ed').addEventListener('close',async()=>{
   if(edSaved||!cur||!cur._added||!cur._added.length)return;
   for(const x of cur._added)await rm('i',ui.u,x);cur._added=[];render()});
+
+/* ===== Slice 4: setting timeline (events, universe level) + story timeline (scenes, per work) ===== */
+const chip=i=>{const e=get('e',ui.u,i);return e?`<i data-pid="${i}">${esc(e.name)} &#10005;</i>`:''};
+const pick=(id,ids)=>`<div class="pk" id="${id}"><div class="chips">${ids.map(chip).join('')}</div><input type="text" list="edl" placeholder="Type a name to add..."></div>`;
+const picked=id=>[...document.querySelectorAll(`#${id} [data-pid]`)].map(x=>x.dataset.pid);
+let curT=null;
+function setting(){
+  const q=($('#sq').value||'').toLowerCase(),sc=all('s',ui.u);
+  const es=all('t',ui.u).filter(e=>!q||(e.title+' '+(e.label||'')+' '+(e.desc||'')).toLowerCase().includes(q)).sort((a,b)=>(a.y-b.y)||a.title.localeCompare(b.title));
+  $('#sl').innerHTML=es.length?es.map(e=>{
+    const n=sc.filter(s=>s.ev===e.id).length,ents=(e.ents||[]).map(i=>get('e',ui.u,i)).filter(Boolean);
+    return `<div class="ev"><div class="evd">${esc(e.label||e.y)}</div><div class="evb"><b>${esc(e.title)}</b>${e.desc?`<div class="pre">${esc(e.desc.length>260?e.desc.slice(0,260)+'…':e.desc)}</div>`:''}<div>${ents.map(x=>`<i data-sh="${x.id}">${esc(x.name)}</i>`).join(' ')}${n?` <span class="chip a">${n} scene(s)</span>`:''}</div></div><button class="sm" data-eev="${e.id}">&#9998;</button></div>`}).join(''):'<div class="empty">No events yet. Add the first with + Event.</div>'}
+function story(){
+  const ws=all('w',ui.u).filter(w=>ui.w?w.id===ui.w:ui.p?w.pid===ui.p:true).sort(by),ev=new Map(all('t',ui.u).map(e=>[e.id,e]));
+  $('#cmode').textContent='Order: '+(ui.chrono?'in-world':'story');
+  $('#sthint').textContent=ui.chrono?'Sorted by the in-world date of each scene. Unlinked scenes go last.':(ui.w?'Reorder with the arrows. Tap a scene to expand it.':'Showing every work in scope. Pick a work in the sidebar to focus on it.');
+  const blk=(t,x)=>x?`<div><div class="lab">${t}</div><div class="pre">${esc(x)}</div></div>`:'';
+  const card=s=>{const e=ev.get(s.ev),lo=get('e',ui.u,s.loc),cast=(s.cast||[]).map(i=>get('e',ui.u,i)).filter(Boolean);
+    return `<details class="sc"><summary><span class="no">${s.order}</span><b>${esc(s.title)}</b>${s.chap?`<span class="chip a">${esc(s.chap)}</span>`:''}${e?`<span class="chip c">${esc(e.label||e.y)}</span>`:''}<span class="mv"><button class="sm" data-mv="${s.id}:-1">&#9650;</button><button class="sm" data-mv="${s.id}:1">&#9660;</button><button class="sm" data-esc="${s.id}">&#9998;</button></span></summary><div class="scb">${lo?`<div><b>Location:</b> <a data-sh="${lo.id}">${esc(lo.name)}</a></div>`:''}${cast.length?`<div><b>Cast:</b> ${cast.map(c=>`<a data-sh="${c.id}">${esc(c.name)}</a>`).join(', ')}</div>`:''}${blk('Notes',s.summary)}${blk('Actions',s.actions)}${blk('Details',s.details)}</div></details>`};
+  const out=ws.map(w=>{
+    const ss=all('s',ui.u).filter(s=>s.wid===w.id).sort(ui.chrono?(a,b)=>((ev.get(a.ev)||{y:1e15}).y-(ev.get(b.ev)||{y:1e15}).y)||a.order-b.order:(a,b)=>a.order-b.order);
+    return ss.length||ui.w?`<div class="lab">${esc(w.name)}</div>`+(ss.map(card).join('')||'<div class="empty">No scenes yet. Add one with + Scene.</div>'):''}).join('');
+  $('#stl').innerHTML=out||'<div class="empty">No scenes yet. Add one with + Scene.</div>'}
+function openEv(e,isNew){
+  curT={k:'t',d:e};$('#tdt').textContent=isNew?'New event':'Edit event';
+  $('#tdb').innerHTML=`<label>Title<input type="text" id="tt" value="${esc(e.title)}"></label>
+  <div class="two"><label>Sort year (number, negatives ok)<input type="text" id="ty" inputmode="decimal" value="${esc(e.y)}"></label><label>Display label<input type="text" id="tlb" placeholder="Year 412, Third Age" value="${esc(e.label)}"></label></div>
+  <label>Description<textarea id="tds">${esc(e.desc)}</textarea></label>
+  <div><div class="lab">Related entities</div>${pick('tp',e.ents||[])}</div>
+  <div class="acts"><button class="pri" id="tsv">Save</button>${isNew?'':'<button class="dg" id="tdl">Delete</button>'}</div>`;
+  $('#td').showModal()}
+function openSc(s,isNew){
+  curT={k:'s',d:s};$('#tdt').textContent=isNew?'New scene':'Edit scene';
+  const ws=all('w',ui.u).sort(by),ps=all('p',ui.u),evs=all('t',ui.u).sort((a,b)=>a.y-b.y),lo=all('e',ui.u).filter(x=>x.type==='location').sort(by);
+  const pn=id=>(ps.find(p=>p.id===id)||{}).name;
+  $('#tdb').innerHTML=`<label>Work<select id="sw">${ws.map(w=>`<option value="${w.id}"${w.id===s.wid?' selected':''}>${esc((pn(w.pid)?pn(w.pid)+' / ':'')+w.name)}</option>`).join('')}</select></label>
+  <div class="two"><label>Scene title<input type="text" id="stt" value="${esc(s.title)}"></label><label>Chapter / act<input type="text" id="sch" value="${esc(s.chap)}"></label></div>
+  <label>When in-world (setting timeline)<select id="sev"><option value="">none</option>${evs.map(e=>`<option value="${e.id}"${e.id===s.ev?' selected':''}>${esc((e.label||e.y)+' - '+e.title)}</option>`).join('')}</select></label>
+  <label>Location<select id="slo"><option value="">none</option>${lo.map(e=>`<option value="${e.id}"${e.id===s.loc?' selected':''}>${esc(e.name)}</option>`).join('')}</select></label>
+  <div><div class="lab">Cast (characters present)</div>${pick('scp',s.cast||[])}</div>
+  <label>Notes<textarea id="ssu">${esc(s.summary)}</textarea></label>
+  <label>Actions (one beat per line)<textarea id="sac">${esc(s.actions)}</textarea></label>
+  <label>Details<textarea id="sde">${esc(s.details)}</textarea></label>
+  <div class="acts"><button class="pri" id="tsv">Save</button>${isNew?'':'<button class="dg" id="tdl">Delete</button>'}</div>`;
+  $('#td').showModal()}
+async function saveT(){
+  const d=curT.d;
+  if(curT.k==='t'){
+    const y=parseFloat($('#ty').value);if(isNaN(y))return toast('Sort year must be a number',1);
+    d.title=$('#tt').value.trim()||'Untitled event';d.y=y;d.label=$('#tlb').value.trim();d.desc=$('#tds').value;d.ents=picked('tp');await save('t',ui.u,d)}
+  else{
+    const w=$('#sw').value;if(!w)return toast('Pick a work',1);
+    if(d.wid!==w||!d.order){d.wid=w;d.order=Math.max(0,...all('s',ui.u).filter(x=>x.wid===w&&x.id!==d.id).map(x=>x.order))+1}
+    d.title=$('#stt').value.trim()||'Untitled scene';d.chap=$('#sch').value.trim();d.ev=$('#sev').value;d.loc=$('#slo').value;d.cast=picked('scp');
+    d.summary=$('#ssu').value;d.actions=$('#sac').value;d.details=$('#sde').value;await save('s',ui.u,d)}
+  $('#td').close();render()}
+async function moveSc(id,d){
+  if(ui.chrono)return toast('Switch to story order to reorder',1);
+  const s=get('s',ui.u,id),ss=all('s',ui.u).filter(x=>x.wid===s.wid).sort((a,b)=>a.order-b.order),i=ss.findIndex(x=>x.id===id),j=i+d;
+  if(j<0||j>=ss.length)return;
+  ss.splice(j,0,ss.splice(i,1)[0]);
+  for(let k=0;k<ss.length;k++)if(ss[k].order!==k+1){ss[k].order=k+1;await save('s',ui.u,ss[k])}
+  render()}
+$('#tdb').onclick=async e=>{
+  const c=e.target.closest('[data-pid]');if(c){c.remove();return}
+  const b=e.target.closest('button');if(!b)return;
+  if(b.id==='tsv')await saveT();
+  if(b.id==='tdl'&&confirm('Delete this?')){await rm(curT.k,ui.u,curT.d.id);$('#td').close();render()}};
+$('#tdb').onchange=e=>{
+  const inp=e.target.closest('.pk input');if(!inp)return;
+  const v=inp.value.trim().toLowerCase();inp.value='';if(!v)return;
+  const m=all('e',ui.u).filter(x=>x.name.toLowerCase()===v).sort(by)[0];
+  if(!m)return toast('No entity with that name',1);
+  const ch=inp.parentElement.querySelector('.chips');
+  if(!ch.querySelector(`[data-pid="${m.id}"]`))ch.insertAdjacentHTML('beforeend',chip(m.id))};
+$('#ts').onclick=()=>showTab('setting');$('#tst').onclick=()=>showTab('story');
+$('#sq').oninput=setting;
+$('#cmode').onclick=()=>{ui.chrono=!ui.chrono;story()};
+$('#sadd').onclick=()=>{if(!ui.u)return toast('Create a universe first',1);openEv({id:uid(),title:'',y:'',label:'',desc:'',ents:[]},true)};
+$('#scadd').onclick=()=>{
+  const ws=all('w',ui.u).sort(by);if(!ws.length)return toast('Create a project and a work first',1);
+  const wid=ui.w||(ui.p&&(ws.find(w=>w.pid===ui.p)||{}).id)||ws[0].id;
+  openSc({id:uid(),wid,order:0,title:'',chap:'',ev:'',loc:'',cast:[],summary:'',actions:'',details:''},true)};
+$('#setv').onclick=e=>{
+  const s=e.target.closest('[data-sh]'),x=e.target.closest('[data-eev]');
+  if(s)sheet(s.dataset.sh);else if(x)openEv(structuredClone(get('t',ui.u,x.dataset.eev)),false)};
+$('#storyv').onclick=async e=>{
+  const s=e.target.closest('[data-sh]'),m=e.target.closest('[data-mv]'),x=e.target.closest('[data-esc]');
+  if(s){sheet(s.dataset.sh);return}
+  if(x){e.preventDefault();openSc(structuredClone(get('s',ui.u,x.dataset.esc)),false);return}
+  if(m){e.preventDefault();const [id,d]=m.dataset.mv.split(':');await moveSc(id,+d)}};
 
 $('#bimp').onclick=()=>$('#fimp').click();
 $('#fimp').onchange=async e=>{
