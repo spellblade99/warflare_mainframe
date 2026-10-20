@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.2.0">
+<meta name="app-version" content="0.3.0">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -110,6 +110,14 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 .gn.src{border-color:var(--amb);background:rgba(255,184,0,.18)}.gh{display:flex;justify-content:space-between;align-items:center}
 .gb b{cursor:pointer;margin-left:10px;color:var(--mut);font-weight:400}.gb b:hover{color:var(--amb)}
 .gt{font-weight:700;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shh{display:flex;gap:14px;align-items:flex-start}.por{width:120px;height:120px;object-fit:cover;border:1px solid var(--cy);cursor:pointer;flex:none}
+.kv{width:100%;border-collapse:collapse}.kv td{padding:4px 8px;border-bottom:1px solid rgba(0,240,255,.15);vertical-align:top}.kv td:first-child{color:var(--cy);width:36%}
+.pre{white-space:pre-wrap}.gal{display:flex;gap:8px;flex-wrap:wrap}.gi2,.th img{width:84px;height:84px;object-fit:cover;border:1px solid rgba(0,240,255,.4);cursor:pointer;display:block}
+.th{position:relative;display:inline-block;margin:0 8px 8px 0}.th button{position:absolute;top:2px;padding:0 6px;font-size:13px}.th button[data-pt]{left:2px}.th button[data-ri]{right:2px}
+.rt{width:26px;height:26px;object-fit:cover;vertical-align:middle;margin-right:8px;border:1px solid rgba(0,240,255,.4)}
+.gi{position:absolute;right:8px;bottom:6px;width:34px;height:34px;object-fit:cover;border:1px solid var(--cy)}.gn.has .gt{max-width:calc(100% - 44px)}
+#sh a{color:var(--cy);cursor:pointer;text-decoration:underline}#lb{width:auto;max-width:96vw}#lb img{max-width:90vw;max-height:80vh;display:block}
+@media print{.wrap,header,.frame,#tk,.hud,.no-print,[data-x],#toast{display:none!important}body{background:#fff!important;color:#000!important;padding:0!important}dialog#sh{position:static!important;display:block;width:auto;max-height:none;clip-path:none;border:0;background:#fff!important}#sh *{color:#000!important;background:transparent!important}#sh .db{max-height:none}}
 </style></head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
@@ -156,10 +164,13 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
   <div class="note">Fine-grained PAT, one repo, Contents: read &amp; write. The repo needs at least one commit (a README is enough).</div>
   <button class="pri" id="save">Save &amp; test</button>
 </div></dialog>
+<dialog id="sh"><div class="dh"><h3 id="sht">Entity</h3><button data-x>X</button></div><div class="db" id="shb"></div></dialog>
+<dialog id="lb"><div class="dh"><h3>Image</h3><button data-x>X</button></div><div class="db"><img id="lbi" alt=""></div></dialog>
+<input type="file" id="fimg" accept="image/*" multiple hidden>
 <div id="toast"></div>
 
 <script>
-const VER='0.2.0',$=s=>document.querySelector(s);
+const VER='0.3.0',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -238,7 +249,7 @@ function render(){
   $('#ft').innerHTML='<option value="">All types</option>'+Object.keys(TY).map(t=>`<option${ui.type===t?' selected':''}>${t}</option>`).join('');
   $('#nt').innerHTML=Object.keys(TY).map(t=>`<option>${t}</option>`).join('');
   const rows=es.filter(e=>(!sc||(e.refs||[]).some(r=>sc.includes(r)))&&(!ui.type||e.type===ui.type)&&(!ui.tag||(e.tags||[]).includes(ui.tag))&&(!q||(e.name+' '+(e.tags||[]).join(' ')+' '+(e.summary||'')).toLowerCase().includes(q))).sort(by);
-  $('#list').innerHTML=!ui.u?'<div class="empty">No universe yet. Tap + beside Universe.</div>':rows.length?rows.map(e=>`<div class="row" data-e="${e.id}"><span class="chip c">${e.type}</span><b>${esc(e.name)}</b><span class="tg">${(e.tags||[]).map(t=>`<i data-t="${esc(t)}">#${esc(t)}</i>`).join('')}</span><span class="dt">${new Date(e.updated).toLocaleDateString()}</span></div>`).join(''):'<div class="empty">Nothing here yet. Use + New.</div>';
+  $('#list').innerHTML=!ui.u?'<div class="empty">No universe yet. Tap + beside Universe.</div>':rows.length?rows.map(e=>`<div class="row" data-e="${e.id}"><span class="chip c">${e.type}</span><b>${(()=>{const p=e.portrait&&get('i',ui.u,e.portrait);return p?`<img class="rt" src="${p.thumb}" alt="">`:''})()}${esc(e.name)}</b><span class="tg">${(e.tags||[]).map(t=>`<i data-t="${esc(t)}">#${esc(t)}</i>`).join('')}</span><span class="dt">${new Date(e.updated).toLocaleDateString()}</span></div>`).join(''):'<div class="empty">Nothing here yet. Use + New.</div>';
   const n=[...F.values()].filter(r=>r.dirty).length;
   const d=$('#dirty');d.textContent=n?n+' unsynced':'Synced';d.className='chip '+(n?'a':'g');
   $('#tk').textContent='> SYSTEM STABLE // '+(n?n+' CHANGE(S) UNSYNCED':'DATA SYNCED')+' // WELCOME BACK, RUNNER...';
@@ -260,15 +271,24 @@ async function del(k,id){
   render()}
 
 /* entity editor */
-let cur=null;
+let cur=null,edSaved=false;
 function fieldRow(k,v){return `<div class="fr"><input type="text" class="fk" placeholder="Field" value="${esc(k)}"><input type="text" class="fv" placeholder="Value" value="${esc(v)}"><button class="sm dg" data-rf>&#10005;</button></div>`}
 function openEd(e,isNew){
-  cur=e;$('#edt').textContent=isNew?'New '+e.type:'Edit entity';
+  cur=e;edSaved=false;e.images=e.images||[];e.traits=e.traits||[];e.inventory=e.inventory||[];e._orig=[...e.images];e._added=[];
+  $('#edt').textContent=isNew?'New '+e.type:'Edit entity';
+  const items=all('e',ui.u).filter(x=>x.type==='item').sort(by);
+  const invRow=i=>`<div class="fr ir" style="grid-template-columns:2fr 56px 1.4fr auto"><input type="text" class="in" placeholder="Item" value="${esc(i.name)}"><input type="text" class="iq" placeholder="Qty" value="${esc(i.qty)}"><select class="is"><option value="">Link item...</option>${items.map(x=>`<option value="${x.id}"${x.id===i.ref?' selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="sm dg" data-rf>&#10005;</button></div>`;
+  window.invRow=invRow;
   const ps=all('p',ui.u).sort(by),ws=all('w',ui.u),chk=(id,n,ind)=>`<label class="ck" style="margin-left:${ind}px"><input type="checkbox" value="${id}"${(e.refs||[]).includes(id)?' checked':''}>${esc(n)}</label>`;
   $('#edb').innerHTML=`<label>Name<input type="text" id="en" value="${esc(e.name)}"></label>
   <div class="two"><label>Type<select id="et">${Object.keys(TY).map(t=>`<option${e.type===t?' selected':''}>${t}</option>`).join('')}</select></label><label>Tags (comma separated)<input type="text" id="eg" value="${esc((e.tags||[]).join(', '))}"></label></div>
   <label>Summary<textarea id="es" style="min-height:60px">${esc(e.summary)}</textarea></label>
+  <div><div class="lab">Images (first star = portrait)</div><div id="gal">${galHTML(e)}</div><button class="sm" id="aimg">+ Add image</button></div>
   <div><div class="lab">Details</div><div id="fl">${(e.fields||[]).map(f=>fieldRow(f.k,f.v)).join('')}</div><button class="sm" id="af">+ Field</button></div>
+  <div class="cs"${e.type==='character'?'':' hidden'}>
+    <div class="lab">Physical traits</div><div id="trl">${e.traits.map(f=>fieldRow(f.k,f.v)).join('')}</div><button class="sm" id="atr">+ Trait</button>
+    <label>Personality<textarea id="epe" style="min-height:70px">${esc(e.personality)}</textarea></label>
+    <div class="lab">Inventory</div><div id="il">${e.inventory.map(invRow).join('')}</div><button class="sm" id="ainv">+ Item</button></div>
   <div><div class="lab">Relationships</div>${(()=>{const nm=i=>(get('e',ui.u,i)||{}).name||'?',rl=all('r',ui.u).filter(r=>r.from===e.id||r.to===e.id);return rl.map(r=>`<div class="ck">${r.from===e.id?'this &rarr; '+esc(r.label||'linked')+' &rarr; '+esc(nm(r.to)):esc(nm(r.from))+' &rarr; '+esc(r.label||'linked')+' &rarr; this'} <button class="sm dg" data-rr="${r.id}">&#10005;</button></div>`).join('')||'<div class="note">None yet. Draw lines on the Canvas tab.</div>'})()}</div>
   <label>Notes<textarea id="eno">${esc(e.notes)}</textarea></label>
   <div><div class="lab">Appears in</div>${ps.map(p=>chk(p.id,p.name,0)+ws.filter(w=>w.pid===p.id).sort(by).map(w=>chk(w.id,w.name,22)).join('')).join('')||'<div class="note">No projects yet.</div>'}</div>
@@ -278,7 +298,7 @@ function openEd(e,isNew){
 function newEnt(){
   if(!ui.u)return toast('Create a universe first',1);
   const type=$('#nt').value||'character',sc=ui.w||ui.p;
-  openEd({id:uid(),type,name:'',tags:[],refs:sc?[sc]:[],summary:'',notes:'',fields:TY[type].map(k=>({k,v:''}))},true)}
+  openEd({id:uid(),type,name:'',tags:[],refs:sc?[sc]:[],summary:'',notes:'',fields:TY[type].map(k=>({k,v:''})),traits:type==='character'?['Height','Build','Hair','Eyes','Distinguishing marks'].map(k=>({k,v:''})):[],personality:'',inventory:[],images:[],portrait:''},true)}
 
 /* events */
 document.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>b.closest('dialog').close());
@@ -296,19 +316,30 @@ $('#side').onclick=e=>{
 $('#tags').onclick=e=>{const t=e.target.closest('[data-t]');if(t){ui.tag=ui.tag===t.dataset.t?'':t.dataset.t;render()}};
 $('#list').onclick=e=>{
   const t=e.target.closest('[data-t]');if(t){ui.tag=ui.tag===t.dataset.t?'':t.dataset.t;return render()}
-  const r=e.target.closest('[data-e]');if(r)openEd(structuredClone(get('e',ui.u,r.dataset.e)),false)};
+  const r=e.target.closest('[data-e]');if(r)sheet(r.dataset.e)};
 $('#edb').onclick=async e=>{
   const b=e.target.closest('button');if(!b)return;
   if(b.dataset.rr){await rm('r',ui.u,b.dataset.rr);b.parentElement.remove();render()}
+  if(b.id==='atr')$('#trl').insertAdjacentHTML('beforeend',fieldRow('',''));
+  if(b.id==='ainv')$('#il').insertAdjacentHTML('beforeend',window.invRow({name:'',qty:'',ref:''}));
+  if(b.id==='aimg')$('#fimg').click();
+  if(b.dataset.pt){cur.portrait=b.dataset.pt;$('#gal').innerHTML=galHTML(cur)}
+  if(b.dataset.ri){const id=b.dataset.ri;cur.images=cur.images.filter(x=>x!==id);if(cur.portrait===id)cur.portrait=cur.images[0]||'';if(cur._added.includes(id)){cur._added=cur._added.filter(x=>x!==id);await rm('i',ui.u,id)}$('#gal').innerHTML=galHTML(cur)}
   if(b.id==='af')$('#fl').insertAdjacentHTML('beforeend',fieldRow('',''));
   if(b.dataset.rf!==undefined)b.parentElement.remove();
-  if(b.id==='edl'&&confirm('Delete this entity?')){await rm('e',ui.u,cur.id);for(const r of all('r',ui.u).filter(r=>r.from===cur.id||r.to===cur.id))await rm('r',ui.u,r.id);$('#ed').close();render()}
+  if(b.id==='edl'&&confirm('Delete this entity?')){for(const x of (cur._orig||[]))await rm('i',ui.u,x);await rm('e',ui.u,cur.id);for(const r of all('r',ui.u).filter(r=>r.from===cur.id||r.to===cur.id))await rm('r',ui.u,r.id);$('#ed').close();render()}
   if(b.id==='esv'){
     const d=cur;d.name=$('#en').value.trim()||'Untitled';d.type=$('#et').value;
     d.tags=$('#eg').value.split(',').map(s=>s.trim().replace(/^#/,'')).filter(Boolean);
     d.summary=$('#es').value;d.notes=$('#eno').value;
     d.fields=[...document.querySelectorAll('#fl .fr')].map(r=>({k:r.querySelector('.fk').value.trim(),v:r.querySelector('.fv').value})).filter(f=>f.k);
     d.refs=[...document.querySelectorAll('#edb .ck input:checked')].map(c=>c.value);
+    d.traits=[...document.querySelectorAll('#trl .fr')].map(r=>({k:r.querySelector('.fk').value.trim(),v:r.querySelector('.fv').value})).filter(f=>f.k);
+    d.personality=$('#epe').value;
+    d.inventory=[...document.querySelectorAll('#il .ir')].map(r=>{const ref=r.querySelector('.is').value;let n=r.querySelector('.in').value.trim();if(!n&&ref)n=(get('e',ui.u,ref)||{}).name||'';return{name:n,qty:r.querySelector('.iq').value.trim(),ref}}).filter(i=>i.name);
+    if(!d.images.includes(d.portrait))d.portrait=d.images[0]||'';
+    for(const x of d._orig)if(!d.images.includes(x))await rm('i',ui.u,x);
+    delete d._orig;delete d._added;edSaved=true;
     await save('e',ui.u,d);$('#ed').close();render()}};
 $('#bpull').onclick=()=>run('Pulling',async()=>{const r=await pull();toast(r.n+' file(s) updated'+(r.k?', '+r.k+' kept local (newer)':''))});
 $('#bcom').onclick=()=>run('Committing',async()=>{const n=await commit();toast(n?n+' change(s) committed':'Nothing to commit')});
@@ -344,7 +375,8 @@ function canvas(){
   if(!b){$('#nodes').innerHTML='';$('#edges').innerHTML='';return}
   const em=new Map(es.map(e=>[e.id,e]));
   $('#nodes').innerHTML=Object.entries(b.nodes).filter(([id])=>em.has(id)).map(([id,p])=>{const e=em.get(id);
-    return `<div class="gn ${ui.src===id?'src':''}" data-n="${id}" style="left:${p.x}px;top:${p.y}px"><div class="gh"><span class="chip c">${e.type}</span><span class="gb"><b data-ed="${id}">&#9998;</b><b data-rm="${id}">&#10005;</b></span></div><div class="gt">${esc(e.name)}</div></div>`}).join('');
+    const pi=e.portrait&&get('i',ui.u,e.portrait);
+    return `<div class="gn ${ui.src===id?'src':''}${pi?' has':''}" data-n="${id}" style="left:${p.x}px;top:${p.y}px">${pi?`<img class="gi" src="${pi.thumb}" alt="">`:''}<div class="gh"><span class="chip c">${e.type}</span><span class="gb"><b data-ed="${id}">&#9998;</b><b data-rm="${id}">&#10005;</b></span></div><div class="gt">${esc(e.name)}</div></div>`}).join('');
   edges();
 }
 async function addB(){const n=ask('Board name','Main');if(!n)return;const id=uid();await save('b',ui.u,{id,name:n,nodes:{}});ui.b=id;render()}
@@ -353,7 +385,7 @@ async function showTab(t){
   if(t==='canvas'&&ui.u&&!boards().length){const id=uid();await save('b',ui.u,{id,name:'Main',nodes:{}});ui.b=id}
   render()}
 async function tapNode(id){
-  if(!ui.lm)return;
+  if(!ui.lm)return sheet(id);
   if(!ui.src){ui.src=id;return canvas()}
   if(ui.src===id){ui.src=null;return canvas()}
   const l=prompt('Relationship label (e.g. mentor of, rivals, born in)','');
@@ -407,6 +439,48 @@ async function place(ids){
 $('#addn').onclick=()=>{const v=$('#addsel').value;if(v)place([v])};
 $('#addscope').onclick=()=>{const b=curB();if(!b)return;const sc=ids();
   place(all('e',ui.u).filter(e=>!b.nodes[e.id]&&(!sc||(e.refs||[]).some(r=>sc.includes(r)))).sort(by).map(e=>e.id))};
+
+/* ===== Slice 3: character sheets + images (images are stored as small JSON files: u/<uid>/i/<id>.json) ===== */
+async function shrink(file,max,q){
+  const url=URL.createObjectURL(file);
+  const img=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('Could not read '+file.name));i.src=url});
+  const s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');
+  c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+  const g=c.getContext('2d');g.fillStyle='#0B0C10';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+  URL.revokeObjectURL(url);return{url:c.toDataURL('image/jpeg',q),w:c.width,h:c.height}}
+$('#fimg').onchange=async e=>{
+  const fs=[...e.target.files];e.target.value='';if(!cur)return;toast('Processing '+fs.length+' image(s)...');
+  for(const f of fs){try{
+    const a=await shrink(f,1400,.82),t=await shrink(f,256,.7),id=uid();
+    await save('i',ui.u,{id,name:f.name,data:a.url,thumb:t.url,w:a.w,h:a.h});
+    cur.images.push(id);cur._added.push(id);if(!cur.portrait)cur.portrait=id}catch(err){toast(err.message,1)}}
+  $('#gal').innerHTML=galHTML(cur)};
+function galHTML(e){return (e.images||[]).map(id=>{const im=get('i',ui.u,id);return im?`<div class="th"><img src="${im.thumb}" alt=""><button class="sm" data-pt="${id}" title="Set as portrait">${e.portrait===id?'&#9733;':'&#9734;'}</button><button class="sm dg" data-ri="${id}">&#10005;</button></div>`:''}).join('')}
+const sec=(t,h)=>h?`<div class="lab">${t}</div>${h}`:'';
+let shId=null;
+function sheet(id){
+  const e=get('e',ui.u,id);if(!e)return;shId=id;
+  const im=x=>get('i',ui.u,x),por=im(e.portrait),nm=i=>(get('e',ui.u,i)||{}).name||'?';
+  const kv=a=>a&&a.length?`<table class="kv">${a.map(f=>`<tr><td>${esc(f.k)}</td><td>${esc(f.v)}</td></tr>`).join('')}</table>`:'';
+  const inv=(e.inventory||[]).map(i=>`<div>${i.ref&&get('e',ui.u,i.ref)?`<a data-sh="${i.ref}">${esc(i.name)}</a>`:esc(i.name)}${i.qty?' &times; '+esc(i.qty):''}</div>`).join('');
+  const rel=all('r',ui.u).filter(r=>r.from===id||r.to===id).map(r=>r.from===id?`<div>&rarr; ${esc(r.label||'linked')} &rarr; <a data-sh="${r.to}">${esc(nm(r.to))}</a></div>`:`<div><a data-sh="${r.from}">${esc(nm(r.from))}</a> &rarr; ${esc(r.label||'linked')} &rarr; this</div>`).join('');
+  const gal=(e.images||[]).filter(im).map(x=>`<img class="gi2" data-lb="${x}" src="${im(x).thumb}" alt="">`).join('');
+  const ap=(e.refs||[]).map(r=>(get('p',ui.u,r)||get('w',ui.u,r)||{}).name).filter(Boolean).join(', ');
+  $('#sht').textContent=e.name;
+  $('#shb').innerHTML=`<div class="shh">${por?`<img class="por" data-lb="${por.id}" src="${por.thumb}" alt="">`:''}<div><span class="chip c">${esc(e.type)}</span> ${(e.tags||[]).map(t=>`<i>#${esc(t)}</i>`).join(' ')}<p>${esc(e.summary)}</p></div></div>`+
+    sec('Details',kv(e.fields))+sec('Physical traits',kv(e.traits))+sec('Personality',e.personality?`<div class="pre">${esc(e.personality)}</div>`:'')+sec('Inventory',inv)+sec('Relationships',rel)+sec('Gallery',gal?`<div class="gal">${gal}</div>`:'')+sec('Notes',e.notes?`<div class="pre">${esc(e.notes)}</div>`:'')+sec('Appears in',ap?`<div>${esc(ap)}</div>`:'')+
+    `<div class="acts no-print"><button class="pri" id="she">Edit</button><button id="shp">Print</button></div>`;
+  if(!$('#sh').open)$('#sh').showModal()}
+$('#shb').onclick=e=>{
+  const l=e.target.closest('[data-lb]'),s=e.target.closest('[data-sh]');
+  if(l){const im=get('i',ui.u,l.dataset.lb);if(im){$('#lbi').src=im.data;$('#lb').showModal()}}
+  else if(s)sheet(s.dataset.sh);
+  else if(e.target.closest('#she')){$('#sh').close();openEd(structuredClone(get('e',ui.u,shId)),false)}
+  else if(e.target.closest('#shp'))window.print()};
+$('#edb').onchange=e=>{if(e.target.id==='et'){const c=$('#edb .cs');if(c)c.hidden=e.target.value!=='character'}};
+$('#ed').addEventListener('close',async()=>{
+  if(edSaved||!cur||!cur._added||!cur._added.length)return;
+  for(const x of cur._added)await rm('i',ui.u,x);cur._added=[];render()});
 
 $('#bimp').onclick=()=>$('#fimp').click();
 $('#fimp').onchange=async e=>{
