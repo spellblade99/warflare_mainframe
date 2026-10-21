@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.5.0">
+<meta name="app-version" content="0.5.1">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -157,6 +157,14 @@ dialog[open]{animation:pop .3s ease}dialog[open]::backdrop{animation:fadein .3s}
 @keyframes pop{0%{opacity:0;transform:scale(.9) translateY(18px)}60%{opacity:1}100%{opacity:1;transform:none}}@keyframes fadein{from{opacity:0}}
 @media(max-width:760px){#list .row{grid-template-columns:80px 1fr auto}}
 @media(prefers-reduced-motion:reduce){dialog[open],dialog[open]::backdrop{animation:none}}
+.vnav{display:grid;gap:8px;margin-bottom:14px}
+.vnav button{text-align:left;width:100%;background:linear-gradient(var(--cy),var(--cy)) no-repeat left/0% 100%,rgba(11,12,16,.85);transition:background .3s ease,color .2s,transform .2s}
+.vnav button:hover:not(:disabled){background:linear-gradient(var(--cy),var(--cy)) no-repeat left/100% 100%,rgba(11,12,16,.85);color:#0B0C10;transform:translateX(3px)}
+.vnav button.on{box-shadow:inset 4px 0 0 var(--cy);background-color:rgba(0,240,255,.14)}.vnav button.on:hover:not(:disabled){box-shadow:none}
+.tag{display:inline-block;font-size:12px;line-height:1.4;padding:2px 12px;border:1px solid rgba(255,184,0,.55);border-radius:999px;background:rgba(255,184,0,.08);color:var(--amb);cursor:pointer;letter-spacing:.04em;transition:background .2s,color .2s}
+.tag:hover{background:rgba(255,184,0,.22)}.tag.on{background:var(--amb);color:#0B0C10}.tag:not([data-t]){cursor:default}.tag:not([data-t]):hover{background:rgba(255,184,0,.08)}
+i{border-radius:999px;padding:2px 11px}
+@media(max-width:760px){.side{display:block}.works{display:none}.side.open .works{display:block}.vnav{display:flex;flex-wrap:wrap;margin-bottom:0}.vnav button{width:auto;flex:1 1 40%}.side.open .vnav{margin-bottom:14px}}
 </style></head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
@@ -175,14 +183,18 @@ dialog[open]{animation:pop .3s ease}dialog[open]::backdrop{animation:fadein .3s}
 <div id="vuni" class="page" hidden><div id="uhead"></div><div class="mod">[MOD_01 // PROJECTS]</div><div id="pgrid" class="ugrid"></div><div class="mod" style="margin-top:30px">[MOD_02 // PINNED IN THIS UNIVERSE]</div><div id="pinu" class="pgrid"></div></div>
 <div class="wrap" id="vproj" hidden>
   <aside class="side" id="side">
-    <div class="lab">[MOD // WORKS]</div>
-    <div id="tree"></div>
-    <button class="sm" id="wadd" style="margin-top:8px">+ Work</button>
+    <div class="lab">[MOD_01 // VIEWS]</div>
+    <div class="vnav"><button id="tl" class="on">&gt; List</button><button id="tc">&gt; Canvas</button><button id="ts">&gt; Setting timeline</button><button id="tst">&gt; Story timeline</button><button id="tlk">&gt; Links</button></div>
+    <div class="works">
+      <div class="lab">[MOD_02 // WORKS]</div>
+      <div id="tree"></div>
+      <button class="sm" id="wadd" style="margin-top:8px">+ Work</button>
+    </div>
   </aside>
   <section class="main">
     <div class="phead"><button class="sm" id="pback">&lt; Back</button><h2 id="pname"></h2><span class="grow"></span><button class="sm" id="pren">&#9998;</button><button class="sm dg" id="pdel">&#10005;</button></div>
     <div class="crumb" id="crumb"></div>
-    <div class="tabs"><button id="tl" class="on">List</button><button id="tc">Canvas</button><button id="ts">Setting timeline</button><button id="tst">Story timeline</button><button id="tlk">Links</button></div>
+    
     <div id="listv"><div class="tool"><input type="text" id="q" placeholder="Search name, tags, summary"><select id="ft"></select><select id="nt"></select><button class="sm" id="scp">Scope: project</button><button class="pri" id="nadd">+ New</button></div>
     <div class="tags" id="tags"></div>
     <div id="list"></div></div>
@@ -216,7 +228,7 @@ dialog[open]{animation:pop .3s ease}dialog[open]::backdrop{animation:fadein .3s}
 <div id="toast"></div>
 
 <script>
-const VER='0.5.0',$=s=>document.querySelector(s);
+const VER='0.5.1',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -306,11 +318,11 @@ function projPage(){
   $('#crumb').textContent=[u.name,p.name,wn&&wn.name].filter(Boolean).join('  \u203A ');
   $('#scp').textContent='Scope: '+(ui.all?'universe':'project');
   const sc=ids(),q=ui.q.toLowerCase(),es=all('e',ui.u);
-  $('#tags').innerHTML=[...new Set(es.flatMap(e=>e.tags||[]))].sort().map(t=>`<i class="${ui.tag===t?'on':''}" data-t="${esc(t)}">#${esc(t)}</i>`).join('');
+  $('#tags').innerHTML=[...new Set(es.flatMap(e=>e.tags||[]))].sort().map(t=>`<span class="tag ${ui.tag===t?'on':''}" data-t="${esc(t)}">${esc(t)}</span>`).join('');
   $('#ft').innerHTML='<option value="">All types</option>'+Object.keys(TY).map(t=>`<option${ui.type===t?' selected':''}>${t}</option>`).join('');
   $('#nt').innerHTML=Object.keys(TY).map(t=>`<option>${t}</option>`).join('');
   const rows=es.filter(e=>(!sc||(e.refs||[]).some(r=>sc.includes(r)))&&(!ui.type||e.type===ui.type)&&(!ui.tag||(e.tags||[]).includes(ui.tag))&&(!q||(e.name+' '+(e.tags||[]).join(' ')+' '+(e.summary||'')).toLowerCase().includes(q))).sort(by);
-  $('#list').innerHTML=rows.length?rows.map(e=>`<div class="row" data-e="${e.id}"><span class="chip c">${e.type}</span><b>${(()=>{const p=e.portrait&&get('i',ui.u,e.portrait);return p?`<img class="rt" src="${p.thumb}" alt="">`:''})()}${esc(e.name)}</b><span class="tg">${(e.tags||[]).map(t=>`<i data-t="${esc(t)}">#${esc(t)}</i>`).join('')}</span><span class="dt">${new Date(e.updated).toLocaleDateString()}</span><button class="sm" data-pin="${e.id}" title="Pin / unpin">${e.pinned?'&#9733;':'&#9734;'}</button></div>`).join(''):'<div class="empty">Nothing here yet. Use + New, or switch Scope to universe.</div>';
+  $('#list').innerHTML=rows.length?rows.map(e=>`<div class="row" data-e="${e.id}"><span class="chip c">${e.type}</span><b>${(()=>{const p=e.portrait&&get('i',ui.u,e.portrait);return p?`<img class="rt" src="${p.thumb}" alt="">`:''})()}${esc(e.name)}</b><span class="tg">${(e.tags||[]).map(t=>`<span class="tag" data-t="${esc(t)}">${esc(t)}</span>`).join('')}</span><span class="dt">${new Date(e.updated).toLocaleDateString()}</span><button class="sm" data-pin="${e.id}" title="Pin / unpin">${e.pinned?'&#9733;':'&#9734;'}</button></div>`).join(''):'<div class="empty">Nothing here yet. Use + New, or switch Scope to universe.</div>';
   for(const [t,v,b] of [['list','listv','tl'],['canvas','canv','tc'],['setting','setv','ts'],['story','storyv','tst'],['links','lkv','tlk']]){$('#'+v).hidden=ui.tab!==t;$('#'+b).className=ui.tab===t?'on':''}
   $('#edl').innerHTML=es.slice().sort(by).map(e=>`<option value="${esc(e.name)}" label="${e.type}">`).join('');
   if(ui.tab==='canvas')canvas();if(ui.tab==='setting')setting();if(ui.tab==='story')story();if(ui.tab==='links')links()}
@@ -576,7 +588,7 @@ function sheet(id){
   const gal=(e.images||[]).filter(im).map(x=>`<img class="gi2" data-lb="${x}" src="${im(x).thumb}" alt="">`).join('');
   const ap=(e.refs||[]).map(r=>(get('p',ui.u,r)||get('w',ui.u,r)||{}).name).filter(Boolean).join(', ');
   $('#sht').textContent=e.name;
-  $('#shb').innerHTML=`<div class="shh">${por?`<img class="por" data-lb="${por.id}" src="${por.thumb}" alt="">`:''}<div><span class="chip c">${esc(e.type)}</span> ${(e.tags||[]).map(t=>`<i>#${esc(t)}</i>`).join(' ')}<p>${esc(e.summary)}</p></div></div>`+
+  $('#shb').innerHTML=`<div class="shh">${por?`<img class="por" data-lb="${por.id}" src="${por.thumb}" alt="">`:''}<div><span class="chip c">${esc(e.type)}</span> ${(e.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join(' ')}<p>${esc(e.summary)}</p></div></div>`+
     sec('Details',kv(e.fields))+sec('Physical traits',kv(e.traits))+sec('Personality',e.personality?`<div class="pre">${esc(e.personality)}</div>`:'')+sec('Inventory',inv)+sec('Relationships',rel)+sec('Gallery',gal?`<div class="gal">${gal}</div>`:'')+sec('Notes',e.notes?`<div class="pre">${esc(e.notes)}</div>`:'')+sec('Appears in',ap?`<div>${esc(ap)}</div>`:'')+
     `<div class="acts no-print"><button class="pri" id="she">Edit</button><button id="shpin">${e.pinned?'Unpin':'Pin'}</button><button id="shp">Print</button></div>`;
   if(!$('#sh').open)$('#sh').showModal()}
