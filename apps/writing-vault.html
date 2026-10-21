@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.5.1">
+<meta name="app-version" content="0.5.2">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -165,16 +165,33 @@ dialog[open]{animation:pop .3s ease}dialog[open]::backdrop{animation:fadein .3s}
 .tag:hover{background:rgba(255,184,0,.22)}.tag.on{background:var(--amb);color:#0B0C10}.tag:not([data-t]){cursor:default}.tag:not([data-t]):hover{background:rgba(255,184,0,.08)}
 i{border-radius:999px;padding:2px 11px}
 @media(max-width:760px){.side{display:block}.works{display:none}.side.open .works{display:block}.vnav{display:flex;flex-wrap:wrap;margin-bottom:0}.vnav button{width:auto;flex:1 1 40%}.side.open .vnav{margin-bottom:14px}}
+#dtab,#dback{display:none}
+@media(max-width:760px){
+:root{--dw:min(82vw,320px)}
+body.drawer{overflow:hidden}
+#dtab,#btog{display:flex;position:fixed;top:84px;right:0;z-index:66;width:36px;height:96px;padding:0;align-items:center;justify-content:center;writing-mode:vertical-rl;letter-spacing:.22em;font-size:12px;clip-path:polygon(0 12px,12px 0,100% 0,100% 100%,12px 100%,0 calc(100% - 12px));transition:transform .3s cubic-bezier(.2,.9,.3,1),background .3s,color .2s}
+#btog[hidden]{display:none}
+body.drawer #dtab,body.drawer #btog{transform:translateX(calc(-1 * var(--dw)))}
+#dback{display:block;position:fixed;inset:0;z-index:64;background:rgba(3,2,5,.72);opacity:0;pointer-events:none;transition:opacity .3s}
+body.drawer #dback{opacity:1;pointer-events:auto}
+.nav,.side{position:fixed!important;top:0;right:0;bottom:0;left:auto;width:var(--dw);max-height:none;margin:0;transform:translateX(105%);transition:transform .3s cubic-bezier(.2,.9,.3,1);z-index:66;overflow-y:auto;padding:24px 16px 28px;display:grid!important;align-content:start;gap:14px;clip-path:polygon(12px 0,100% 0,100% 100%,0 100%,0 12px);backdrop-filter:none;background:rgba(11,12,16,.97)}
+body.drawer .nav,body.drawer .side{transform:none}
+.wrap2{position:static!important;z-index:auto!important}
+.nav .nb,.nav button,.vnav button{width:100%;flex:none;min-height:54px}
+.vnav{display:grid!important;margin-bottom:0}
+.works{display:block!important}
+.hexbox{display:block}
+}
 </style></head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
-<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div>
+<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div><button id="btog" hidden>NAV</button><div id="dback"></div>
 <header>
   <h1>Writing <b>Vault</b></h1>
   <div class="clock"><b id="clk"></b><small id="dt"></small></div>
   <div class="meta">
     <span class="chip c" id="ver"></span><span class="chip" id="dirty"></span>
-    <button id="btog" hidden>Works</button>
+    
     <button id="bimp">Import</button><input type="file" id="fimp" accept=".json" hidden>
     <button id="bpull">Pull</button><button class="pri" id="bcom">Commit</button><button id="bgh">GitHub</button>
   </div>
@@ -228,7 +245,7 @@ i{border-radius:999px;padding:2px 11px}
 <div id="toast"></div>
 
 <script>
-const VER='0.5.1',$=s=>document.querySelector(s);
+const VER='0.5.2',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -339,7 +356,7 @@ function render(){
   const n=[...F.values()].filter(r=>r.dirty).length,d=$('#dirty');d.textContent=n?n+' unsynced':'Synced';d.className='chip '+(n?'a':'g');
   $('#tk').textContent='> SYSTEM STABLE // '+(n?n+' CHANGE(S) UNSYNCED':'DATA SYNCED')+' // WELCOME BACK, RUNNER...';
 }
-function go(v,u,p,w){ui.view=v;if(u)ui.u=u;ui.p=p||null;ui.w=w||null;ui.tab='list';ui.tag='';ui.type='';ui.q='';ui.all=false;$('#q').value='';$('#side').classList.remove('open');render();scrollTo(0,0)}
+function go(v,u,p,w){ui.view=v;if(u)ui.u=u;ui.p=p||null;ui.w=w||null;ui.tab='list';ui.tag='';ui.type='';ui.q='';ui.all=false;$('#q').value='';setDrawer(false);render();scrollTo(0,0)}
 async function togglePin(u,id){const d=get('e',u,id);if(!d)return;d.pinned=!d.pinned;await save('e',u,d);render()}
 /* links (project level) */
 function links(){
@@ -426,13 +443,14 @@ $('#tlk').onclick=()=>showTab('links');
 $('#lkadd').onclick=()=>openLk({id:uid(),pid:ui.p,title:'',url:'',note:''},true);
 $('#lkv').onclick=e=>{const x=e.target.closest('[data-elk]');if(x)openLk(structuredClone(get('l',ui.u,x.dataset.elk)),false)};
 $('#q').oninput=e=>{ui.q=e.target.value;render()};$('#ft').onchange=e=>{ui.type=e.target.value;render()};
-$('#btog').onclick=()=>$('#side').classList.toggle('open');
+$('#btog').onclick=()=>setDrawer(!drawerOpen());
+$('#side').addEventListener('click',e=>{if(e.target.closest('.vnav button'))setDrawer(false)});
 $('#side').onclick=e=>{
   const a=e.target.closest('[data-a]');
   if(a){const [c,x,y]=a.dataset.a.split(':');if(c==='ren')ren(x,y);if(c==='del')del(x,y);return}
   const n=e.target.closest('[data-s]');if(!n)return;
   const [t,x]=n.dataset.s.split(':');ui.w=t==='w'?x:null;
-  $('#side').classList.remove('open');render()};
+  setDrawer(false);render()};
 $('#tags').onclick=e=>{const t=e.target.closest('[data-t]');if(t){ui.tag=ui.tag===t.dataset.t?'':t.dataset.t;render()}};
 $('#list').onclick=e=>{
   const t=e.target.closest('[data-t]');if(t){ui.tag=ui.tag===t.dataset.t?'':t.dataset.t;return render()}
@@ -716,5 +734,9 @@ $('#ver').textContent='v'+VER;
 function tick(){const d=new Date();$('#clk').textContent=d.toLocaleTimeString([],{hour12:false});$('#dt').textContent=d.toLocaleDateString(undefined,{weekday:'short',year:'numeric',month:'short',day:'numeric'})+' // SYNC: '+(ready()?'OK':'OFFLINE')}
 tick();setInterval(tick,1000);
 (async()=>{(await io('readonly',s=>s.getAll())).forEach(r=>F.set(r.path,r));render()})();
+
+function setDrawer(on){document.body.classList.toggle('drawer',on);const t=$('#dtab')||$('#btog');if(t)t.textContent=on?'\u2715':'NAV'}
+const drawerOpen=()=>document.body.classList.contains('drawer');
+$('#dback').onclick=()=>setDrawer(false);
 </script>
 </body></html>
