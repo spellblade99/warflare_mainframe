@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.5.0">
+<meta name="app-version" content="0.6.0">
 <meta name="theme-color" content="#0B0C10">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -133,11 +133,28 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 #appview[hidden]{display:none}
 .avbar{display:flex;align-items:center;gap:14px;padding:8px 14px;background:rgba(15,20,27,.97);border-bottom:1px solid rgba(0,240,255,.4);font-family:var(--hd);letter-spacing:.15em;text-transform:uppercase;color:var(--cy)}
 #avf{flex:1;border:0;width:100%;background:#0B0C10}
+#dtab,#dback{display:none}
+@media(max-width:760px){
+:root{--dw:min(82vw,320px)}
+body.drawer{overflow:hidden}
+#dtab,#btog{display:flex;position:fixed;top:84px;right:0;z-index:66;width:36px;height:96px;padding:0;align-items:center;justify-content:center;writing-mode:vertical-rl;letter-spacing:.22em;font-size:12px;clip-path:polygon(0 12px,12px 0,100% 0,100% 100%,12px 100%,0 calc(100% - 12px));transition:transform .3s cubic-bezier(.2,.9,.3,1),background .3s,color .2s}
+#btog[hidden]{display:none}
+body.drawer #dtab,body.drawer #btog{transform:translateX(calc(-1 * var(--dw)))}
+#dback{display:block;position:fixed;inset:0;z-index:64;background:rgba(3,2,5,.72);opacity:0;pointer-events:none;transition:opacity .3s}
+body.drawer #dback{opacity:1;pointer-events:auto}
+.nav,.side{position:fixed!important;top:0;right:0;bottom:0;left:auto;width:var(--dw);max-height:none;margin:0;transform:translateX(105%);transition:transform .3s cubic-bezier(.2,.9,.3,1);z-index:66;overflow-y:auto;padding:24px 16px 28px;display:grid!important;align-content:start;gap:14px;clip-path:polygon(12px 0,100% 0,100% 100%,0 100%,0 12px);backdrop-filter:none;background:rgba(11,12,16,.97)}
+body.drawer .nav,body.drawer .side{transform:none}
+.wrap2{position:static!important;z-index:auto!important}
+.nav .nb,.nav button,.vnav button{width:100%;flex:none;min-height:54px}
+.vnav{display:grid!important;margin-bottom:0}
+.works{display:block!important}
+.hexbox{display:block}
+}
 </style>
 </head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
-<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div>
+<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div><button id="dtab" title="Menu">NAV</button><div id="dback"></div>
 <div class="scan"></div>
 <svg id="hud" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
 <g fill="none" stroke="#00F0FF">
@@ -194,7 +211,7 @@ i{border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(-
 <div id="toast"></div>
 
 <script>
-const VERSION='0.5.0';
+const VERSION='0.6.0';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let cfg=Object.assign({owner:'',repo:'',branch:'main',path:'apps'},JSON.parse(localStorage.wfcfg||'{}'));
@@ -343,6 +360,12 @@ $('#ccommit').onclick=async()=>{
 };
 $('#cfile').onclick=()=>$('#fone').click();
 $('#cdel').onclick=async()=>{if(confirm('Remove '+cur.name+' from the launcher? (Repo is untouched)')){await del(cur.file);$('#dcog').close();render()}};
+
+function setDrawer(on){document.body.classList.toggle('drawer',on);const t=$('#dtab')||$('#btog');if(t)t.textContent=on?'\u2715':'NAV'}
+const drawerOpen=()=>document.body.classList.contains('drawer');
+$('#dback').onclick=()=>setDrawer(false);
+$('#dtab').onclick=()=>setDrawer(!drawerOpen());
+$('.nav').addEventListener('click',e=>{if(e.target.closest('button'))setDrawer(false)});
 </script>
 </body>
 </html>
