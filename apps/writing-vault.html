@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.7.1">
+<meta name="app-version" content="0.7.3">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -241,12 +241,27 @@ body.focus>#wmain{overscroll-behavior:contain}
 #chlist .lab,#chlist .note{flex:none;align-self:center;margin:0 4px 0 0}
 #chlist .ch{flex:none;min-width:170px;margin:0}
 }
+#fab2{display:none}
+body.focus #fab2{display:flex;position:fixed;right:24px;bottom:calc(22px + 68px + var(--kb,0px));width:44px;height:44px;padding:0;z-index:70;align-items:center;justify-content:center;border-radius:50%;clip-path:none;background:rgba(11,12,16,.96);color:var(--cy);border:2px solid var(--cy)}
+@media(max-width:760px){
+body.inwrite #fab{display:flex;position:fixed;right:18px;bottom:calc(22px + var(--kb,0px));width:56px;height:56px;padding:0;z-index:70;align-items:center;justify-content:center;font-size:24px;border-radius:50%;clip-path:none;background:var(--cy);color:#0B0C10;border:2px solid #0B0C10;box-shadow:0 0 0 2px var(--cy),0 4px 14px rgba(0,0,0,.6)}
+body.inwrite #fab2{display:flex;position:fixed;right:24px;bottom:calc(22px + 68px + var(--kb,0px));width:44px;height:44px;padding:0;z-index:70;align-items:center;justify-content:center;border-radius:50%;clip-path:none;background:rgba(11,12,16,.96);color:var(--cy);border:2px solid var(--cy)}
+body.inwrite #fab:hover:not(:disabled){background:#7ff8ff;transform:none}
+body.inwrite #wmain .wtb{display:none}
+body.inwrite #sheet{padding-bottom:130px}
+}
+/* minimizable header (universe and project pages) */
+#hmin{padding:3px 12px;font-size:12px}
+body.hmin header{padding:4px 14px;grid-template-columns:1fr auto;gap:10px}
+body.hmin header h1{font-size:15px;letter-spacing:.12em;text-shadow:none}
+body.hmin header .clock,body.hmin header .meta>*:not(#dirty):not(#hmin){display:none}
+@media(max-width:760px){body.hmin header{grid-template-columns:1fr auto;text-align:left}body.hmin header .meta{justify-content:flex-end}}
 </style>
 
 </head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
-<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div><div id="printarea"></div><div id="qi"></div><button id="mchip"></button><button id="fab" title="Menu">&#9776;</button><style id="pgstyle"></style><button id="btog" hidden>NAV</button><div id="dback"></div>
+<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div><div id="printarea"></div><div id="qi"></div><button id="mchip"></button><button id="fab" title="Menu">&#9776;</button><button id="fab2" title="Focus mode"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button><style id="pgstyle"></style><button id="btog" hidden>NAV</button><div id="dback"></div>
 <header>
   <h1>Writing <b>Vault</b></h1>
   <div class="clock"><b id="clk"></b><small id="dt"></small></div>
@@ -255,6 +270,7 @@ body.focus>#wmain{overscroll-behavior:contain}
     
     <button id="bimp">Import</button><input type="file" id="fimp" accept=".json" hidden>
     <button id="bpull">Pull</button><button class="pri" id="bcom">Commit</button><button id="bgh">GitHub</button>
+    <button id="hmin" hidden title="Minimize or restore this header">&#9650; Hide</button>
   </div>
 </header>
 <div id="vhome" class="page"><div class="mod">[MOD_01 // UNIVERSES]</div><div id="ugrid" class="ugrid"></div><div class="mod" style="margin-top:30px">[MOD_02 // PINNED]</div><div id="pinh" class="pgrid"></div></div>
@@ -332,7 +348,7 @@ body.focus>#wmain{overscroll-behavior:contain}
 <div id="toast"></div>
 
 <script>
-const VER='0.7.1',$=s=>document.querySelector(s);
+const VER='0.7.3',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -438,7 +454,7 @@ function render(){
   if(ui.w&&!get('w',ui.u,ui.w))ui.w=null;
   localStorage.wvu=ui.u||'';
   for(const [v,id] of [['home','vhome'],['uni','vuni'],['proj','vproj']])$('#'+id).hidden=ui.view!==v;
-  $('#btog').hidden=ui.view!=='proj';document.body.classList.toggle('inwrite',ui.view==='proj'&&ui.tab==='write');
+  $('#btog').hidden=ui.view!=='proj';document.body.classList.toggle('inwrite',ui.view==='proj'&&ui.tab==='write');vv();applyHmin();
   if(ui.view==='home')home(us);else if(ui.view==='uni')uniPage();else projPage();
   const n=[...F.values()].filter(r=>r.dirty).length,d=$('#dirty');d.textContent=n?n+' unsynced':'Synced';d.className='chip '+(n?'a':'g');
   $('#tk').textContent='> SYSTEM STABLE // '+(n?n+' CHANGE(S) UNSYNCED':'DATA SYNCED')+' // WELCOME BACK, RUNNER...';
@@ -1045,19 +1061,20 @@ $('#wtb').addEventListener('click',e=>{const b=e.target.closest('button'),a=b&&b
 /* focus mode: only the page + a floating circle that opens the menu modal */
 let wholder=null;
 let vvq=0,vvl='';
-function vv(){if(!document.body.classList.contains('focus')||vvq||!window.visualViewport)return;vvq=requestAnimationFrame(()=>{vvq=0;const v=window.visualViewport,h=v.height+'px',k=Math.max(0,innerHeight-v.height-v.offsetTop)+'px';if(vvl===h+k)return;vvl=h+k;const r=document.documentElement.style;r.setProperty('--vvh',h);r.setProperty('--kb',k)})}
+function vv(){const b=document.body.classList;if(!(b.contains('focus')||b.contains('inwrite'))||vvq||!window.visualViewport)return;vvq=requestAnimationFrame(()=>{vvq=0;const v=window.visualViewport,k=Math.max(0,Math.round(innerHeight-v.height-v.offsetTop))+'px',h=b.contains('focus')?v.height+'px':'',sig=k+h;if(vvl===sig)return;vvl=sig;const r=document.documentElement.style;r.setProperty('--kb',k);if(h)r.setProperty('--vvh',h)})}
 if(window.visualViewport){visualViewport.addEventListener('resize',vv);visualViewport.addEventListener('scroll',vv)}
+const ICO={on:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',off:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>'};
 function setFocus(on){
-  const w=$('#wmain');
+  const w=$('#wmain');$('#fab2').innerHTML=on?ICO.off:ICO.on;
   if(on){flushWrite();wholder=w.parentNode;document.body.appendChild(w);document.body.classList.add('focus');setDrawer(false);vv();ed.focus()}
   else{document.body.classList.remove('focus');vvl='';document.documentElement.style.removeProperty('--vvh');document.documentElement.style.removeProperty('--kb');if($('#fm').open)$('#fm').close();if(wholder)wholder.appendChild(w);scrollTo(0,0)}}
 function openFm(){
-  flushWrite();$('#fmtb').appendChild($('#wtb'));
+  flushWrite();$('#fmtb').appendChild($('#wtb'));$('#fmexit').textContent=document.body.classList.contains('focus')?'Exit focus mode':'Enter focus mode';
   $('#fmt').textContent=($('#wcnt').textContent||'')+' - '+($('#cht').value||'');
   const cs=all('c',ui.u).filter(c=>all('w',ui.u).some(w=>w.id===c.wid&&w.pid===ui.p)).sort((a,b)=>a.order-b.order);
   $('#fmch').innerHTML=cs.map(c=>`<button class="${c.id===wr.id?'pri':''}" data-fmch="${c.id}">${esc(c.title)} (${c.words||0})</button>`).join('')+'<button data-fmadd>+ Chapter</button>';
   $('#fm').showModal()}
-$('#fab').onclick=openFm;
+$('#fab').onclick=openFm;$('#fab2').onclick=()=>setFocus(!document.body.classList.contains('focus'));
 $('#fm').addEventListener('close',()=>{const t=$('#wtb'),m=$('#wmain');if(t.parentNode!==m)m.insertBefore(t,$('#sheet'))});
 const cf=()=>{const d=$('#fm');if(d.open)d.close()};
 $('#fm').addEventListener('click',e=>{
@@ -1066,6 +1083,11 @@ $('#fm').addEventListener('click',e=>{
   if(ch){cf();openCh(ch);ed.focus()}
   else if('fmadd' in b.dataset){cf();addCh()}
   else if(b.id==='fmpg'){cf();openPg()}else if(b.id==='fmcast'){cf();openCast()}else if(b.id==='fmprint'){cf();printCh()}
-  else if(b.id==='fmread'){cf();toggleRead()}else if(b.id==='fmexit'){cf();setFocus(false)}});
+  else if(b.id==='fmread'){cf();toggleRead()}else if(b.id==='fmexit'){cf();setFocus(!document.body.classList.contains('focus'))}});
+
+/* minimize the header (not on the landing page) */
+ui.hmin=localStorage.wvhmin==='1';
+function applyHmin(){const on=!!ui.hmin&&ui.view!=='home';document.body.classList.toggle('hmin',on);const b=$('#hmin');b.hidden=ui.view==='home';b.innerHTML=ui.hmin?'&#9660;':'&#9650; Hide';b.title=ui.hmin?'Show the Git buttons':'Minimize the header'}
+$('#hmin').onclick=()=>{ui.hmin=!ui.hmin;localStorage.wvhmin=ui.hmin?'1':'0';applyHmin()};
 </script>
 </body></html>
