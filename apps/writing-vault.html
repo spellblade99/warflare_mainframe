@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="app-version" content="0.6.0">
+<meta name="app-version" content="0.7.0">
 <title>Writing Vault</title>
 <style>
 :root{--bg:#04070a;--p1:#0f141b;--p2:#171e28;--ink:#030205;--tx:#e6dce4;--mut:#8b94a0;--red:#b3344f;--red2:#932a41;--cy:#19b5d9;--amb:#c79a45;--ok:#5a9a6e}
@@ -209,11 +209,27 @@ body.drawer .nav,body.drawer .side{transform:none}
 @media print{body.printing>*:not(#printarea){display:none!important}body.printing{background:#fff!important}
 body.printing #printarea{--ff:Georgia,serif;display:block!important;color:#000;background:#fff;font-family:var(--ff);font-size:var(--fs);line-height:var(--lh);padding:0}
 #printarea h1.pt{text-align:center;margin:0 0 1.2em}#printarea hr{border:0;height:0;break-after:page}}
+::highlight(ment){background-color:rgba(0,170,210,.24);text-decoration:underline dotted rgba(0,120,160,.95)}
+#qi{position:fixed;z-index:80;display:none;min-width:250px;max-width:min(92vw,380px);max-height:270px;overflow:auto;background:rgba(11,12,16,.98);border:1px solid var(--cy)}
+.qr{display:flex;gap:8px;align-items:center;padding:8px 10px;cursor:pointer;border-bottom:1px solid rgba(0,240,255,.12)}.qr:hover,.qr.on{background:rgba(0,240,255,.18)}
+.qr b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qr small{color:var(--mut)}
+#mchip{display:none;position:fixed;z-index:80;padding:6px 12px;font-size:13px}
+#fab{display:none}
+body.focus{overflow:hidden}
+body.focus>.frame,body.focus>header,body.focus>.page,body.focus>.wrap,body.focus>#tk,body.focus>#btog,body.focus>#dtab,body.focus>#dback{display:none!important}
+body.focus>#wmain{position:fixed;top:0;left:0;right:0;height:var(--vvh,100dvh);z-index:68;overflow:auto;background:#05080b;touch-action:pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body.focus>#wmain .wtop,body.focus>#wmain .wtb{display:none}
+body.focus>#wmain #sheet{margin:0 auto;width:100%;min-height:100%;box-shadow:none;padding:calc(20px + env(safe-area-inset-top)) clamp(18px,6vw,64px) 110px}
+body.focus #fab{display:flex;position:fixed;right:18px;bottom:calc(22px + var(--kb,0px));width:56px;height:56px;padding:0;z-index:70;align-items:center;justify-content:center;font-size:24px;border-radius:50%;clip-path:none;background:var(--cy);color:#0B0C10;border:2px solid #0B0C10;box-shadow:0 0 0 2px var(--cy),0 4px 14px rgba(0,0,0,.6)}
+body.focus #fab:hover:not(:disabled){background:#7ff8ff;transform:none}
+#fm .wtb{position:static;flex-wrap:wrap;overflow:visible;white-space:normal;border:0;padding:0;background:none}#fm .wtb button,#fm .wtb select{flex:none}
+#fmch{display:grid;gap:6px}
 </style>
+
 </head>
 <body>
 <div class="frame"><div class="cb tl"></div><div class="cb tr"></div><div class="cb bl"></div><div class="cb br"></div><span class="co a">SYS.LOC // 45.7001, -73.6402</span><span class="co b">SYS_STATUS: ONLINE</span></div>
-<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div><div id="printarea"></div><style id="pgstyle"></style><button id="btog" hidden>NAV</button><div id="dback"></div>
+<div id="tk">&gt; SYSTEM STABLE // WELCOME BACK, RUNNER...</div><div id="printarea"></div><div id="qi"></div><button id="mchip"></button><button id="fab" title="Menu">&#9776;</button><style id="pgstyle"></style><button id="btog" hidden>NAV</button><div id="dback"></div>
 <header>
   <h1>Writing <b>Vault</b></h1>
   <div class="clock"><b id="clk"></b><small id="dt"></small></div>
@@ -267,7 +283,7 @@ body.printing #printarea{--ff:Georgia,serif;display:block!important;color:#000;b
           <button data-c="justifyLeft" title="Align left">L</button><button data-c="justifyCenter" title="Center">C</button><button data-c="justifyRight" title="Align right">R</button><button data-c="justifyFull" title="Justify">J</button><span class="sep"></span>
           <button data-c="insertUnorderedList" title="Bullets">&bull;</button><button data-c="insertOrderedList" title="Numbers">1.</button><button data-a="out" title="Outdent (Shift+Tab)">&#8676;</button><button data-a="ind" title="Indent">&#8677;</button><button data-a="tab" title="Insert tab (Tab)">Tab</button><span class="sep"></span>
           <button data-a="sb" title="Scene break">***</button><button data-a="pb" title="Page break">PB</button><span class="sep"></span>
-          <button data-a="pg" title="Page setup">Page</button><button data-a="print" title="Print or save as PDF">Print</button>
+          <button data-a="pg" title="Page setup">Page</button><button data-a="print" title="Print or save as PDF">Print</button><span class="sep"></span><button data-a="ent" title="Create an entity from the selected text">+Ent</button><button data-a="cast" title="Entities in this chapter">Cast</button><button data-a="read" title="Read mode: click names to open them">Read</button><button data-a="focus" title="Focus mode">Focus</button>
         </div>
         <div id="sheet"><div id="ed" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true"></div></div>
       </div>
@@ -294,10 +310,12 @@ body.printing #printarea{--ff:Georgia,serif;display:block!important;color:#000;b
 <datalist id="edl"></datalist>
 <dialog id="am"><div class="dh"><h3 id="amt">New</h3><button data-x>X</button></div><div class="db"><label>Name<input type="text" id="ami" autocomplete="off"></label><div class="acts"><button class="pri" id="amok">Create</button></div></div></dialog>
 <dialog id="pgd"><div class="dh"><h3>Page setup</h3><button data-x>X</button></div><div class="db" id="pgb"></div></dialog>
+<dialog id="mp"><div class="dh"><h3 id="mpt">Entities</h3><button data-x>X</button></div><div class="db" id="mpb"></div></dialog>
+<dialog id="fm"><div class="dh"><h3 id="fmt">Menu</h3><button data-x>X</button></div><div class="db"><div id="fmtb"></div><div class="lab">Chapters</div><div id="fmch"></div><div class="lab">Tools</div><div class="acts"><button id="fmpg">Page setup</button><button id="fmcast">Cast</button><button id="fmprint">Print</button><button id="fmread">Read / Edit</button></div><button class="pri" id="fmexit">Exit focus mode</button></div></dialog>
 <div id="toast"></div>
 
 <script>
-const VER='0.6.0',$=s=>document.querySelector(s);
+const VER='0.7.0',$=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-3);
 const by=(a,b)=>a.name.localeCompare(b.name);
@@ -445,6 +463,7 @@ function openEd(e,isNew){
   const ps=all('p',ui.u).sort(by),ws=all('w',ui.u),chk=(id,n,ind)=>`<label class="ck" style="margin-left:${ind}px"><input type="checkbox" value="${id}"${(e.refs||[]).includes(id)?' checked':''}>${esc(n)}</label>`;
   $('#edb').innerHTML=`<label>Name<input type="text" id="en" value="${esc(e.name)}"></label>
   <div class="two"><label>Type<select id="et">${Object.keys(TY).map(t=>`<option${e.type===t?' selected':''}>${t}</option>`).join('')}</select></label><label>Tags (comma separated)<input type="text" id="eg" value="${esc((e.tags||[]).join(', '))}"></label></div>
+  <label>Also known as (comma separated nicknames)<input type="text" id="eal" value="${esc((e.aliases||[]).join(', '))}"></label>
   <label>Summary<textarea id="es" style="min-height:60px">${esc(e.summary)}</textarea></label>
   <div><div class="lab">Images (first star = portrait)</div><div id="gal">${galHTML(e)}</div><button class="sm" id="aimg">+ Add image</button></div>
   <div><div class="lab">Details</div><div id="fl">${(e.fields||[]).map(f=>fieldRow(f.k,f.v)).join('')}</div><button class="sm" id="af">+ Field</button></div>
@@ -522,7 +541,7 @@ $('#edb').onclick=async e=>{
   if(b.id==='esv'){
     const d=cur;d.name=$('#en').value.trim()||'Untitled';d.type=$('#et').value;
     d.tags=$('#eg').value.split(',').map(s=>s.trim().replace(/^#/,'')).filter(Boolean);
-    d.summary=$('#es').value;d.notes=$('#eno').value;
+    d.aliases=$('#eal').value.split(',').map(s=>s.trim()).filter(Boolean);d.summary=$('#es').value;d.notes=$('#eno').value;
     d.fields=[...document.querySelectorAll('#fl .fr')].map(r=>({k:r.querySelector('.fk').value.trim(),v:r.querySelector('.fv').value})).filter(f=>f.k);
     d.refs=[...document.querySelectorAll('#edb .ck input:checked')].map(c=>c.value);
     d.traits=[...document.querySelectorAll('#trl .fr')].map(r=>({k:r.querySelector('.fk').value.trim(),v:r.querySelector('.fv').value})).filter(f=>f.k);
@@ -658,7 +677,7 @@ function sheet(id){
   const gal=(e.images||[]).filter(im).map(x=>`<img class="gi2" data-lb="${x}" src="${im(x).thumb}" alt="">`).join('');
   const ap=(e.refs||[]).map(r=>(get('p',ui.u,r)||get('w',ui.u,r)||{}).name).filter(Boolean).join(', ');
   $('#sht').textContent=e.name;
-  $('#shb').innerHTML=`<div class="shh">${por?`<img class="por" data-lb="${por.id}" src="${por.thumb}" alt="">`:''}<div><span class="chip c">${esc(e.type)}</span> ${(e.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join(' ')}<p>${esc(e.summary)}</p></div></div>`+
+  $('#shb').innerHTML=`<div class="shh">${por?`<img class="por" data-lb="${por.id}" src="${por.thumb}" alt="">`:''}<div><span class="chip c">${esc(e.type)}</span> ${(e.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join(' ')}<p>${esc(e.summary)}</p>${(e.aliases||[]).length?`<div class="note">Also known as: ${esc(e.aliases.join(', '))}</div>`:''}</div></div>`+
     sec('Details',kv(e.fields))+sec('Physical traits',kv(e.traits))+sec('Personality',e.personality?`<div class="pre">${esc(e.personality)}</div>`:'')+sec('Inventory',inv)+sec('Relationships',rel)+sec('Gallery',gal?`<div class="gal">${gal}</div>`:'')+sec('Notes',e.notes?`<div class="pre">${esc(e.notes)}</div>`:'')+sec('Appears in',ap?`<div>${esc(ap)}</div>`:'')+
     `<div class="acts no-print"><button class="pri" id="she">Edit</button><button id="shpin">${e.pinned?'Unpin':'Pin'}</button><button id="shp">Print</button></div>`;
   if(!$('#sh').open)$('#sh').showModal()}
@@ -837,7 +856,7 @@ function chapList(){
 function openCh(id){
   if(wr.id&&wr.id!==id)flushWrite();
   const ch=get('c',ui.u,id);if(!ch)return;
-  wr.id=id;wr.range=null;ed.innerHTML=sanitizeHTML(ch.html)||'<p><br></p>';$('#cht').value=ch.title;$('#wcnt').textContent=wordsOf()+' words';$('#wsv').textContent='Saved';$('#wsv').className='chip g';chapList()}
+  wr.id=id;wr.range=null;ed.innerHTML=sanitizeHTML(ch.html)||'<p><br></p>';$('#cht').value=ch.title;$('#wcnt').textContent=wordsOf()+' words';$('#wsv').textContent='Saved';$('#wsv').className='chip g';chapList();scanMentions()}
 function writing(){
   applyPage();
   const wids=new Set(all('w',ui.u).filter(w=>w.pid===ui.p).map(w=>w.id));
@@ -845,7 +864,7 @@ function writing(){
   if(!ch){const l=all('c',ui.u).filter(c=>wids.has(c.wid)&&(!ui.w||c.wid===ui.w)).sort((a,b)=>a.order-b.order);if(l.length){openCh(l[0].id);ch=l[0]}}
   else if(!ed.dataset.loaded||ed.dataset.loaded!==wr.id){ed.dataset.loaded=wr.id}
   $('#wmain').hidden=!ch;$('#wempty').hidden=!!ch;chapList();
-  if(ch)ed.dataset.loaded=wr.id}
+  if(ch){ed.dataset.loaded=wr.id;scanMentions()}}
 async function addCh(){
   const ws=all('w',ui.u).filter(w=>w.pid===ui.p).sort(by);if(!ws.length)return toast('Add a work in the sidebar first',1);
   const wid=ui.w||ws[0].id,n=all('c',ui.u).filter(c=>c.wid===wid);
@@ -876,18 +895,19 @@ function outTab(){restore();const s=getSelection();if(!s.rangeCount)return;const
   if(r.collapsed&&r.startContainer.nodeType===3&&r.startOffset>0&&r.startContainer.data[r.startOffset-1]==='\t'){document.execCommand('delete');queue()}else indentBlocks(-1)}
 $('#wtb').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault()});
 $('#wtb').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
+  const b=e.target.closest('button');if(!b)return;if(['ent','cast','read','focus'].includes(b.dataset.a))return;cf();
   if(b.dataset.c)return exec(b.dataset.c);
   const a=b.dataset.a;
   if(a==='tab')insTab();else if(a==='ind')inList()?exec('indent'):indentBlocks(1);else if(a==='out')inList()?exec('outdent'):outTab();
   else if(a==='sb')exec('insertHTML','<p style="text-align:center;text-indent:0px">* * *</p><p><br></p>');
   else if(a==='pb')exec('insertHorizontalRule');
   else if(a==='pg')openPg();else if(a==='print')printCh()});
-$('#wfont').onchange=e=>{const v=FONTS[e.target.value];e.target.value='';if(v)exec('fontName',v)};
-$('#wsize').onchange=e=>{const px=e.target.value;e.target.value='';if(!px)return;exec('fontSize','7');ed.querySelectorAll('span[style*="xxx-large"],font[size="7"]').forEach(x=>{x.style.fontSize=px+'px';x.removeAttribute('size')});queue()};
-$('#wblk').onchange=e=>{exec('formatBlock',e.target.value)};
+$('#wfont').onchange=e=>{cf();const v=FONTS[e.target.value];e.target.value='';if(v)exec('fontName',v)};
+$('#wsize').onchange=e=>{cf();const px=e.target.value;e.target.value='';if(!px)return;exec('fontSize','7');ed.querySelectorAll('span[style*="xxx-large"],font[size="7"]').forEach(x=>{x.style.fontSize=px+'px';x.removeAttribute('size')});queue()};
+$('#wblk').onchange=e=>{cf();exec('formatBlock',e.target.value)};
 ed.addEventListener('input',queue);
 ed.addEventListener('keydown',e=>{
+  if(qiKey(e))return;
   if(e.key==='Tab'){e.preventDefault();if(e.shiftKey)inList()?document.execCommand('outdent'):outTab();else inList()?document.execCommand('indent'):document.execCommand('insertText',false,'\t');queue()}});
 ed.addEventListener('paste',e=>{
   e.preventDefault();const h=e.clipboardData.getData('text/html'),t=e.clipboardData.getData('text/plain');
@@ -915,5 +935,116 @@ function printCh(){
   $('#pgstyle').textContent=`@page{size:${w}in ${h||11}in;margin:${g.margin}in}`;
   document.body.classList.add('printing');setTimeout(()=>window.print(),60)}
 addEventListener('afterprint',()=>document.body.classList.remove('printing'));
+/* ===== Build 2: entity mentions, #/@ quick-insert, cast panel, read mode, focus mode ===== */
+const MT=new Set(['character','faction','location','item']),QQ=/[“"”][^“”"]*[“"”]\s*/g,coarse=matchMedia('(pointer:coarse)').matches;
+wr.ments=[];wr.chip=null;
+const qi={on:false,items:[],sel:0,node:null,start:0,end:0};
+const canon=e=>e.name.replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim()||e.name;
+function variants(e){
+  const out=new Set(),add=s=>{s=(s||'').replace(/\s+/g,' ').trim();if(s.length>=3)out.add(s)},name=e.name||'',base=name.replace(/\s*\([^)]*\)/g,'');
+  add(name);add(base);add(base.replace(QQ,''));
+  if(e.type==='character'){const w=base.replace(QQ,'').trim().split(' ');if(w.length>1&&/^[A-Z\u00C0-\u024F]/.test(w[0])&&w[0].length>=3&&!/^(The|And|Of|Lord|Lady|Sir|Dr|Mr|Mrs)$/i.test(w[0]))add(w[0])}
+  for(const m of name.matchAll(/[“"]([^”"]+)[”"]/g))add(m[1]);
+  for(const m of name.matchAll(/\(([^)]*)\)/g)){const c=m[1].trim();if(/^[A-Z\u00C0-\u024F]/.test(c)){add(c);add(c.replace(QQ,''))}}
+  (e.aliases||[]).forEach(add);return [...out]}
+function scanMentions(){
+  const map=new Map();
+  for(const e of all('e',ui.u)){if(!MT.has(e.type))continue;for(const v of variants(e)){const a=map.get(v)||[];if(!a.includes(e.id))a.push(e.id);map.set(v,a)}}
+  const keys=[...map.keys()].sort((a,b)=>b.length-a.length);wr.ments=[];
+  if(keys.length){
+    const re=new RegExp('(?<![\\p{L}\\p{N}_])(?:'+keys.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![\\p{L}\\p{N}_])','gu'),tw=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let n;
+    while(n=tw.nextNode()){re.lastIndex=0;let m;while((m=re.exec(n.data))){const r=document.createRange();r.setStart(n,m.index);r.setEnd(n,m.index+m[0].length);wr.ments.push({r,ids:map.get(m[0])||[],t:m[0]})}}}
+  if(window.CSS&&CSS.highlights&&window.Highlight)CSS.highlights.set('ment',new Highlight(...wr.ments.map(m=>m.r)))}
+const scanSoon=()=>{clearTimeout(wr.st);wr.st=setTimeout(scanMentions,300)};
+function pointAt(x,y){if(document.caretPositionFromPoint){const p=document.caretPositionFromPoint(x,y);return p&&{n:p.offsetNode,o:p.offset}}if(document.caretRangeFromPoint){const r=document.caretRangeFromPoint(x,y);return r&&{n:r.startContainer,o:r.startOffset}}return null}
+const mentionAt=(n,o)=>wr.ments.find(m=>{try{return m.r.isPointInRange(n,o)}catch(x){return false}});
+function pickList(title,rows){
+  $('#mpt').textContent=title;
+  $('#mpb').innerHTML=rows.length?rows.map(x=>`<div class="qr" data-mpid="${x.e.id}"><span class="chip c">${esc(x.e.type)}</span><b>${esc(x.e.name)}</b>${x.n?`<small>${x.n}&times;</small>`:''}</div>`).join(''):'<div class="empty">No entity names found in this chapter yet.</div>';
+  $('#mp').showModal()}
+function openMention(m){const es=m.ids.map(i=>get('e',ui.u,i)).filter(Boolean);if(es.length===1)sheet(es[0].id);else if(es.length)pickList('Which one?',es.map(e=>({e})))}
+function openCast(){scanMentions();const c=new Map();for(const m of wr.ments)for(const id of m.ids)c.set(id,(c.get(id)||0)+1);pickList('In this chapter',[...c].map(([id,n])=>({e:get('e',ui.u,id),n})).filter(x=>x.e).sort((a,b)=>b.n-a.n))}
+$('#mpb').onclick=e=>{const r=e.target.closest('[data-mpid]');if(r){$('#mp').close();sheet(r.dataset.mpid)}};
+ed.addEventListener('click',e=>{if(!(ed.contentEditable==='false'||e.ctrlKey||e.metaKey))return;const p=pointAt(e.clientX,e.clientY),m=p&&mentionAt(p.n,p.o);if(m){e.preventDefault();openMention(m)}});
+function chipCheck(){
+  const c=$('#mchip'),s=getSelection();c.style.display='none';
+  if(!coarse||!s.rangeCount||!s.isCollapsed||!ed.contains(s.anchorNode)||ed.contentEditable==='false')return;
+  const m=mentionAt(s.anchorNode,s.anchorOffset);if(!m)return;
+  wr.chip=m;c.textContent='Open '+m.t+' \u25B8';c.style.display='block';const b=m.r.getBoundingClientRect();
+  c.style.left=Math.max(8,Math.min(b.left,innerWidth-c.offsetWidth-8))+'px';c.style.top=Math.max(8,b.top-c.offsetHeight-8)+'px'}
+$('#mchip').addEventListener('pointerdown',e=>e.preventDefault());$('#mchip').onclick=()=>{if(wr.chip)openMention(wr.chip);$('#mchip').style.display='none'};
+/* quick insert: #type/tag + name filter, @name */
+const inScope=e=>{const sc=ids();return !sc||(e.refs||[]).some(r=>sc.includes(r))?1:0};
+const rank=(a,b)=>(inScope(b.e)-inScope(a.e))||a.e.name.localeCompare(b.e.name);
+function nameRows(q){q=q.toLowerCase();
+  return all('e',ui.u).map(e=>{const vs=[e.name,...variants(e)],h=vs.find(v=>v.toLowerCase().startsWith(q))||vs.find(v=>v.toLowerCase().includes(q));return (h||!q)?{e,h}:null}).filter(Boolean).sort(rank).slice(0,10)
+   .map(({e,h})=>({e,text:h&&h!==e.name&&h.toLowerCase().startsWith(q)?h:canon(e)}))}
+function hashRows(q){
+  const es=all('e',ui.u),tok=q.split(' ')[0].toLowerCase(),rest=q.slice(tok.length).trim().toLowerCase();
+  if(!tok){const tc={};es.forEach(e=>(e.tags||[]).forEach(t=>tc[t]=(tc[t]||0)+1));
+    return Object.keys(TY).map(t=>({cat:true,kind:'type',label:t})).concat(Object.entries(tc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t])=>({cat:true,kind:'tag',label:t})))}
+  let m=es.filter(e=>(e.type.startsWith(tok)||(e.tags||[]).some(t=>t.toLowerCase().startsWith(tok)))&&(!rest||[e.name,...variants(e)].some(v=>v.toLowerCase().includes(rest)))).map(e=>({e}));
+  if(!m.length)return nameRows(q);
+  return m.sort(rank).slice(0,12).map(({e})=>({e,text:canon(e)}))}
+function qiHide(){qi.on=false;$('#qi').style.display='none'}
+function qiShow(){
+  const el=$('#qi');qi.on=qi.items.length>0;if(!qi.on)return qiHide();
+  el.innerHTML=qi.items.map((it,i)=>`<div class="qr ${i===qi.sel?'on':''}" data-qi="${i}">`+(it.cat?`<span class="chip a">${it.kind}</span><b>${esc(it.label)}</b>`:`<span class="chip c">${esc(it.e.type)}</span><b>${esc(it.text)}</b><small>${esc((it.e.tags||[]).slice(0,3).join(', '))}</small>`)+'</div>').join('');
+  el.style.display='block';
+  const s=getSelection(),r=s.rangeCount&&s.getRangeAt(0).cloneRange(),b=(r&&(r.getClientRects()[0]||r.getBoundingClientRect()))||{},c=ed.getBoundingClientRect();
+  const L=b.left||c.left+20,T=(b.bottom||c.top+40)+6,kb=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kb'))||0;
+  el.style.left=Math.max(8,Math.min(L,innerWidth-el.offsetWidth-8))+'px';
+  el.style.top=(T+el.offsetHeight>innerHeight-kb?Math.max(8,(b.top||T-30)-el.offsetHeight-6):T)+'px'}
+function qiCheck(){
+  const s=getSelection();if(!s.rangeCount||!s.isCollapsed||!ed.contains(s.anchorNode)||s.anchorNode.nodeType!==3||ed.contentEditable==='false')return qiHide();
+  const n=s.anchorNode,o=s.anchorOffset,m=n.data.slice(0,o).match(/(?:^|[\s(\u201c"'])([#@])([^#@\n]{0,40})$/);
+  if(!m||m[2].startsWith(' '))return qiHide();
+  qi.items=m[1]==='@'?nameRows(m[2]):hashRows(m[2]);qi.sel=0;qi.node=n;qi.start=o-m[2].length-1;qi.end=o;qiShow()}
+function qiPick(i){
+  const it=qi.items[i];if(!it)return;
+  const r=document.createRange();r.setStart(qi.node,qi.start+(it.cat?1:0));r.setEnd(qi.node,qi.end);
+  const s=getSelection();s.removeAllRanges();s.addRange(r);
+  document.execCommand('insertText',false,it.cat?it.label+' ':it.text);queue();scanSoon();
+  if(it.cat)qiCheck();else qiHide()}
+function qiKey(e){
+  if(!qi.on)return false;const n=qi.items.length;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();qi.sel=(qi.sel+(e.key==='ArrowDown'?1:n-1))%n;qiShow();return true}
+  if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();qiPick(qi.sel);return true}
+  if(e.key==='Escape'){e.preventDefault();qiHide();return true}
+  return false}
+$('#qi').addEventListener('pointerdown',e=>{e.preventDefault();const r=e.target.closest('[data-qi]');if(r)qiPick(+r.dataset.qi)});
+ed.addEventListener('input',()=>{qiCheck();scanSoon()});
+document.addEventListener('selectionchange',()=>{if(ui.tab==='write'){chipCheck();qiCheck()}});
+/* toolbar extras: + Entity, Cast, Read, Focus */
+function toggleRead(){const on=ed.contentEditable!=='false';ed.contentEditable=on?'false':'true';qiHide();document.querySelectorAll('[data-a="read"]').forEach(b=>b.textContent=on?'Edit':'Read');if(on)getSelection().removeAllRanges()}
+function entFromSel(){
+  const t=(wr.range?wr.range.toString():'').replace(/\s+/g,' ').trim();if(!t||t.length>80)return toast('Select a name (up to 80 characters) first',1);
+  const sc=ui.w||ui.p;openEd({id:uid(),type:'character',name:t,tags:[],aliases:[],refs:sc?[sc]:[],summary:'',notes:'',fields:TY.character.map(k=>({k,v:''})),traits:[],personality:'',inventory:[],images:[],portrait:''},true)}
+$('#wtb').addEventListener('click',e=>{const b=e.target.closest('button'),a=b&&b.dataset.a;
+  if(a==='ent')entFromSel();else if(a==='cast')openCast();else if(a==='read')toggleRead();else if(a==='focus')setFocus(true)});
+/* focus mode: only the page + a floating circle that opens the menu modal */
+let wholder=null;
+function vv(){const v=window.visualViewport;if(!v)return;const r=document.documentElement.style;r.setProperty('--vvh',v.height+'px');r.setProperty('--kb',Math.max(0,innerHeight-v.height-v.offsetTop)+'px')}
+if(window.visualViewport){visualViewport.addEventListener('resize',vv);visualViewport.addEventListener('scroll',vv)}
+function setFocus(on){
+  const w=$('#wmain');
+  if(on){flushWrite();wholder=w.parentNode;document.body.appendChild(w);document.body.classList.add('focus');setDrawer(false);vv();ed.focus()}
+  else{document.body.classList.remove('focus');if($('#fm').open)$('#fm').close();if(wholder)wholder.appendChild(w);scrollTo(0,0)}}
+function openFm(){
+  flushWrite();$('#fmtb').appendChild($('#wtb'));
+  $('#fmt').textContent=($('#wcnt').textContent||'')+' - '+($('#cht').value||'');
+  const cs=all('c',ui.u).filter(c=>all('w',ui.u).some(w=>w.id===c.wid&&w.pid===ui.p)).sort((a,b)=>a.order-b.order);
+  $('#fmch').innerHTML=cs.map(c=>`<button class="${c.id===wr.id?'pri':''}" data-fmch="${c.id}">${esc(c.title)} (${c.words||0})</button>`).join('')+'<button data-fmadd>+ Chapter</button>';
+  $('#fm').showModal()}
+$('#fab').onclick=openFm;
+$('#fm').addEventListener('close',()=>{const t=$('#wtb'),m=$('#wmain');if(t.parentNode!==m)m.insertBefore(t,$('#sheet'))});
+const cf=()=>{const d=$('#fm');if(d.open)d.close()};
+$('#fm').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b||b.closest('#wtb'))return;
+  const ch=b.dataset.fmch;
+  if(ch){cf();openCh(ch);ed.focus()}
+  else if('fmadd' in b.dataset){cf();addCh()}
+  else if(b.id==='fmpg'){cf();openPg()}else if(b.id==='fmcast'){cf();openCast()}else if(b.id==='fmprint'){cf();printCh()}
+  else if(b.id==='fmread'){cf();toggleRead()}else if(b.id==='fmexit'){cf();setFocus(false)}});
 </script>
 </body></html>
